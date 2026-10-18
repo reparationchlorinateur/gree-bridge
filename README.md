@@ -1,14 +1,17 @@
 # Gree bridge
 
-A small ESP32-S3 board that goes inside a **Gree mini-split indoor unit** and makes it part of your home: control it, see what it is really doing (compressor speed, current, outdoor temperature...), from **Home Assistant**, from **Apple Home** (Matter, straight from the board), or both. It runs [Tasmota](https://tasmota.github.io/) plus two small Berry scripts.
+A small ESP32-S3 board that goes inside a **mini-split indoor unit** and makes it part of your home, from **Home Assistant**, from **Apple Home** (Matter, straight from the board), or both. It runs [Tasmota](https://tasmota.github.io/) plus a few small Berry scripts.
 
-> ⚠️ **Read [SAFETY.md](SAFETY.md) before opening a unit.** This board connects to the logic side of the indoor unit's control board, which sits next to mains voltage and a 56 V communication loop. It was built and tested on **one** model (Gree GWH12KF, indoor board GRJ819-A3). You do this at your own risk; it can void your warranty.
+- **IR control, most brands**: the board drives the unit's own IR receiver line and hears the wall remote on it. This works on most units whose IR receiver feeds the control board directly (most do, especially older ones), with any AC brand Tasmota's IR library knows: Gree, Daikin, Mitsubishi, Fujitsu, LG, Samsung, Panasonic, Toshiba, Midea and many more.
+- **The unit's real state, Gree**: it also listens to the indoor/outdoor bus, so you see what the unit is really doing (compressor speed and current, outdoor temperature, coil temperatures...). This is decoded and tested on a **Gree GWH12KF** only; other Gree units of the same era probably use the same bus (not checked). For other units, the board's Gree tools page and the Claude Skill help record and decode the bus ([adapting to other units](docs/adapting.md)).
+
+> ⚠️ **Read [SAFETY.md](SAFETY.md) before opening a unit.** This board connects to the logic side of the indoor unit's control board, which sits next to mains voltage and a 56 V communication loop. It was built and tested on **one** model (Gree GWH12KF, indoor board GRJ819-A3); the IR part has not been tried on other brands yet. You do this at your own risk; it can void your warranty.
 
 ![Board, top](docs/images/board_top.png)
 
 ## What it does
 
-- **Controls the unit by IR**, without any IR LED: it drives the unit's own IR receiver line (the wall remote keeps working). Uses Tasmota's IR library (protocol `GREE`), so modes, setpoint, fan, swing, turbo, display, etc. are all available.
+- **Controls the unit by IR**, without any IR LED: it drives the unit's own IR receiver line (the wall remote keeps working). Uses Tasmota's IR library (protocol `GREE` here; other brands use their own protocol the same way), so modes, setpoint, fan, swing, turbo, display, etc. are all available.
 - **Hears the wall remote** on the same line, so Home Assistant / Apple Home learn about remote presses.
 - **Reads the indoor/outdoor bus** (600 baud, one frame per second each way) through two high-impedance taps, listen only: room temperature, indoor coil, mode, setpoint, indoor fan, compressor frequency and current, estimated outdoor power, outdoor air and coil temperatures, discharge temperature, link status. So the app shows the **real** state of the unit, even after a missed remote press or a restart.
 - **BME280** (temperature, humidity, pressure) on a plug-in breakout, plus an I2C connector for more sensors.
