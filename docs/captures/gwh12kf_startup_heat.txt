@@ -1,0 +1,71 @@
+# Gree bridge capture 2026-10-18T05:09:32
+# gree_tools.be 2026-10-18b, gree_bus.be 2026-10-18 rev B
+# bus: 600 8E1, RX inverted, TX normal, BusGap 300 ms, BusAuto on
+# ir: GREE, model YAW1F (14 presses since restart)
+# plan: on the next IR command, 3 s before and 5 s after, then 5 s every 60 s, 4 windows
+# format: <ms since the capture started> <RX|TX|IR|IRHVAC|GREE|MARK> <data>
+# armed: waiting for an IR command (wall remote, Home Assistant or Apple Home)
+# window 1/4 starts at +3 s
+18 TX 07 12 6D 04 00 03 88 F0 0D
+171 RX 07 12 6D 04 00 03 88 F0 0D 08 00 00 00 5D 58 48 00 00 4D 0F
+1016 TX 07 12 6D 04 00 03 88 F0 0D
+1168 RX 07 12 6D 04 00 03 88 F0 0D 08 00 00 00 5D 58 48 00 00 4D 0F
+2026 TX 07 12 6D 04 00 03 88 F0 0D
+2164 RX 07 12 6D 04 00 03 88 F0 0D 08 00 00 00 5D 58 48 00 00 4D 0F
+3000 GREE {"Room":18.0,"Coil":18.4,"CoilRaw":109,"Power":"OFF","Mode":"heat","Setpoint":24,"Fan":0,"Link":"OK","CompHz":0,"CompA":0.00,"PowerW":0,"OutCoil":12.9,"OutAir":5.3,"DischC":36.3,"OutMode":"off","DischRaw":88,"LoadRaw":0,"Out":[0,0,0,93,88,72,0,0],"OutLink":"OK"}
+3000 IR {"IRHVAC":{"Sleep":-1,"Econo":"Off","Power":"On","Temp":24,"SensorTemp":null,"iFeel":"Off","Command":"Control","SwingH":"Off","Light":"Off","Filter":"Off","Mode":"Heat","Celsius":"On","SwingV":"Off","Beep":"Off","Model":"YBOFB","Turbo":"Off","Quiet":"Off","FanSpeed":"Auto","Clean":"Off","Vendor":"GREE"},"Bits":64,"Repeat":0,"RawDataInfo":[139,139,0],"Data":"0x0C08005000200000","Protocol":"GREE","RawData":"+9040-4370+690-490+705d+710-1575+700-1590CdF-485+730-475+695dFjEdF-495MgFd+720-465+715-480FjEdFjQrFjEdFjFdHjFjQlQrFjO-1570+740-450E-1585OlO-470HgE-500E-19785HdFr+725wT-455EnHdFdHdEdQrEdFjFrFiCdKpFj+745uFdK-460EdFrFd+745-440KpEd+735-460FdOwHdFdFrE"}
+3073 TX 07 12 6D 04 00 03 88 F0 0D
+3178 RX 07 12 6D 04 00 03 88 F0 0D 08 00 00 00 5D 58 48 00 00 4D 0F
+4029 TX 07 12 6D 0C 00 03 88 F8 0D
+4174 RX 07 12 6D 0C 00 03 88 F8 0D 08 00 00 00 5D 58 48 00 00 4D 0F
+5014 TX 07 12 6D 0C 00 03 88 F8 0D
+5186 RX 07 12 6D 0C 00 03 88 F8 0D 08 10 01 00 5D 58 48 00 04 58 0F
+6013 TX 07 12 6D 0C 00 03 88 F8 0D
+6190 RX 07 12 6D 0C 00 03 88 F8 0D 08 11 01 00 5D 58 48 00 04 59 0F
+7014 TX 07 12 6D 0C 00 03 88 F8 0D
+7187 RX 07 12 6D 0C 00 03 88 F8 0D 08 12 01 00 5D 58 48 00 04 5A 0F
+8368 GREE {"Room":18.0,"Coil":18.4,"CoilRaw":109,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":0,"Link":"OK","CompHz":19,"CompA":0.00,"PowerW":46,"OutCoil":12.9,"OutAir":5.3,"DischC":36.3,"OutMode":"heat","DischRaw":88,"LoadRaw":0,"Out":[19,1,0,93,88,72,0,4],"OutLink":"OK"}
+# window 1/4 ends at +8 s
+# window 2/4 starts at +63 s
+63366 GREE {"Room":18.0,"Coil":30.4,"CoilRaw":143,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":0,"Link":"OK","CompHz":46,"CompA":1.85,"PowerW":467,"OutCoil":3.7,"OutAir":5.3,"DischC":38.8,"OutMode":"heat","DischRaw":94,"LoadRaw":37,"Out":[46,1,0,68,94,72,37,4],"OutLink":"OK"}
+64041 TX 07 12 90 0C 00 03 88 05 0D
+64188 RX 07 12 90 0C 00 03 88 05 0D 08 2E 01 00 43 5E 48 37 04 49 0F
+65035 TX 07 12 91 0C 00 03 88 04 0D
+65194 RX 07 12 91 0C 00 03 88 04 0D 08 2E 01 00 43 5E 48 2D 04 53 0F
+66029 TX 07 12 91 0C 00 03 88 04 0D
+66178 RX 07 12 91 0C 00 03 88 04 0D 08 2E 01 00 43 5E 48 29 04 57 0F
+67035 TX 07 12 92 0C 00 03 88 07 0D
+67212 RX 07 12 92 0C 00 03 88 07 0D 08 2E 01 00 42 5F 48 28 04 56 0F
+68036 TX 07 12 93 0C 00 03 88 06 0D
+68178 RX 07 12 93 0C 00 03 88 06 0D 08 2E 01 00 42 5F 48 30 04 4E 0F
+68378 GREE {"Room":18.0,"Coil":31.9,"CoilRaw":147,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":0,"Link":"OK","CompHz":46,"CompA":2.40,"PowerW":593,"OutCoil":3.0,"OutAir":5.3,"DischC":39.2,"OutMode":"heat","DischRaw":95,"LoadRaw":48,"Out":[46,1,0,66,95,72,48,4],"OutLink":"OK"}
+# window 2/4 ends at +68 s
+# window 3/4 starts at +123 s
+123388 GREE {"Room":18.0,"Coil":41.6,"CoilRaw":171,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":1,"Link":"OK","CompHz":46,"CompA":2.75,"PowerW":673,"OutCoil":-2.0,"OutAir":4.9,"DischC":42.5,"OutMode":"heat","DischRaw":103,"LoadRaw":55,"Out":[46,1,0,54,103,71,55,4],"OutLink":"OK"}
+124052 TX 07 12 AB 0C 00 03 98 2E 0D
+124204 RX 07 12 AB 0C 00 03 98 2E 0D 08 2E 01 00 36 67 47 38 04 05 0F
+125057 TX 07 12 AB 0C 00 03 98 2E 0D
+125218 RX 07 12 AB 0C 00 03 98 2E 0D 08 2E 01 00 35 67 47 39 04 07 0F
+126066 TX 07 12 AB 0C 00 03 98 2E 0D
+126211 RX 07 12 AB 0C 00 03 98 2E 0D 08 2E 01 00 35 67 47 33 04 0D 0F
+127046 TX 07 12 AB 0C 00 03 98 2E 0D
+127197 RX 07 12 AB 0C 00 03 98 2E 0D 08 2E 01 00 35 67 47 3A 04 04 0F
+128039 TX 07 12 AB 0C 00 03 98 2E 0D
+128196 RX 07 12 AB 0C 00 03 98 2E 0D 08 2E 01 00 35 67 47 41 04 7F 0F
+129485 GREE {"Room":18.0,"Coil":41.2,"CoilRaw":170,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":1,"Link":"OK","CompHz":46,"CompA":2.05,"PowerW":513,"OutCoil":-2.4,"OutAir":4.9,"DischC":42.5,"OutMode":"heat","DischRaw":103,"LoadRaw":41,"Out":[46,1,0,53,103,71,41,4],"OutLink":"OK"}
+# window 3/4 ends at +129 s
+# window 4/4 starts at +184 s
+184380 GREE {"Room":18.0,"Coil":39.4,"CoilRaw":166,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":2,"Link":"OK","CompHz":46,"CompA":2.15,"PowerW":536,"OutCoil":-2.0,"OutAir":4.5,"DischC":42.1,"OutMode":"heat","DischRaw":102,"LoadRaw":43,"Out":[46,1,0,54,102,70,43,4],"OutLink":"OK"}
+185053 TX 07 12 A6 0C 00 03 A8 13 0D
+185194 RX 07 12 A6 0C 00 03 A8 13 0D 08 2F 01 00 36 66 46 33 04 0F 0F
+186027 TX 07 12 A6 0C 00 03 A8 13 0D
+186188 RX 07 12 A6 0C 00 03 A8 13 0D 08 30 01 00 37 66 46 2D 04 0F 0F
+187040 TX 07 12 A6 0C 00 03 A8 13 0D
+187183 RX 07 12 A6 0C 00 03 A8 13 0D 08 31 01 00 37 66 46 2C 04 0F 0F
+188049 TX 07 12 A6 0C 00 03 A8 13 0D
+188198 RX 07 12 A6 0C 00 03 A8 13 0D 08 32 01 00 37 66 46 2B 04 0B 0F
+189047 TX 07 12 A6 0C 00 03 A8 13 0D
+189194 RX 07 12 A6 0C 00 03 A8 13 0D 08 33 01 00 37 66 46 30 04 11 0F
+189453 GREE {"Room":18.0,"Coil":39.4,"CoilRaw":166,"Power":"ON","Mode":"heat","Setpoint":24,"Fan":2,"Link":"OK","CompHz":51,"CompA":2.40,"PowerW":593,"OutCoil":-1.6,"OutAir":4.5,"DischC":42.1,"OutMode":"heat","DischRaw":102,"LoadRaw":48,"Out":[51,1,0,55,102,70,48,4],"OutLink":"OK"}
+# window 4/4 ends at +189 s
+# end: done

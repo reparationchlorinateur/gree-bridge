@@ -56,6 +56,8 @@
     BusAuto 0|1      switch a tap's polarity by itself when bytes arrive but no valid frame decodes
                      for 20 s, and save the polarity that works (default 1, saved); a silent bus
                      (unit in standby) never triggers a switch; no value = show status
+    BusSerial <baud>,<format>  serial settings of both taps, e.g. BusSerial 600,8E1 (default, saved);
+                     for other units, found with BusDetect (gree_tools.be)
   Raw frames are written to the log at level 3: use "Weblog 3" to see them in the web console.
 
   Indoor frame, measured on GWH12KF (2026-10-07): 600 baud 8E1 (one idle bit between bytes),
@@ -110,6 +112,20 @@ class GreeBusTap
       self.ser = nil
       log(string.format("BUS: cannot open %s on GPIO%d (%s: %s)", self.name, self.gpio, str(e), str(m)), 1)
     end
+  end
+
+  def close()
+    if self.ser != nil
+      self.ser.close()
+      self.ser = nil
+    end
+  end
+
+  # New serial settings (baud, mode) and polarity
+  def reconfig(baud, mode, inverted)
+    self.baud = baud
+    self.mode = mode
+    self.open(inverted)
   end
 
   # Collect received bytes; return a list of complete frames (possibly empty)
@@ -363,7 +379,7 @@ class GreeBus
   static var MAX_LEN     = 80      # keeps the HA state under its 255-character limit
   static var HEARTBEAT   = 60      # republish decoded values at least this often (s)
   # -----------------------------------------------------------
-  static var VERSION     = "2026-10-08 rev B"
+  static var VERSION     = "2026-10-18 rev B"
   # Home Assistant entities: component, object id, name, value template, extra discovery keys
   static var HA = [
     ["sensor", "room_temperature", "Room temperature (unit)", "{{ value_json.Gree.Room }}",
@@ -417,6 +433,7 @@ class GreeBus
   ]
   var taps, publish, gap, flen, topic, indoor, outdoor, interval, last_key, last_json, last_pub_ms, auto, saved_inv
   var disc_on, disc_name, disc_check
+  var baud, fmt, hooks, paused
 
   def init()
     self.publish = persist.find("bus_publish", false)
@@ -434,13 +451,18 @@ class GreeBus
     self.last_key = ""
     self.last_json = ""
     self.last_pub_ms = nil
-    var mode = serial.SERIAL_8E1
+    self.baud = persist.find("bus_baud", self.BAUD)
+    self.fmt = persist.find("bus_fmt", "8E1")
+    var mode = GreeBus.fmt_mode(self.fmt)
+    if mode == nil self.fmt = "8E1" mode = serial.SERIAL_8E1 end
+    self.hooks = []
+    self.paused = false
     # polarity saved in flash; nil = never saved (then the defaults above are used)
     self.saved_inv = {"RX": persist.find("bus_inv_rx", nil), "TX": persist.find("bus_inv_tx", nil)}
     self.taps = [
-      GreeBusTap("RX", self.RX_GPIO, self.BAUD, mode,
+      GreeBusTap("RX", self.RX_GPIO, self.baud, mode,
                  self.saved_inv["RX"] != nil ? self.saved_inv["RX"] : self.RX_INVERTED),
-      GreeBusTap("TX", self.TX_GPIO, self.BAUD, mode,
+      GreeBusTap("TX", self.TX_GPIO, self.baud, mode,
                  self.saved_inv["TX"] != nil ? self.saved_inv["TX"] : self.TX_INVERTED)
     ]
     tasmota.add_fast_loop(/-> self.loop())
@@ -452,6 +474,7 @@ class GreeBus
     tasmota.add_cmd("BusAuto", /cmd, idx, payload -> self.cmd_auto(payload))
     tasmota.add_cmd("Gree", /cmd, idx, payload -> self.cmd_gree())
     tasmota.add_cmd("GreeDiscovery", /cmd, idx, payload -> self.cmd_discovery(payload))
+    tasmota.add_cmd("BusSerial", /cmd, idx, payload -> self.cmd_serial(payload))
     tasmota.add_rule("Mqtt#Connected", /-> self.on_mqtt_connect())
   end
 
@@ -536,7 +559,52 @@ class GreeBus
     return parts.concat(" ")
   end
 
+  # "8E1" -> serial.SERIAL_8E1 (nil if unknown)
+  static def fmt_mode(f)
+    import introspect
+    if type(f) != 'string' || size(f) != 3 return nil end
+    var m = introspect.get(serial, "SERIAL_" + string.toupper(f))
+    return (type(m) == 'int') ? m : nil
+  end
+
+  # Other scripts (gree_tools.be) get every raw frame: h(tap_name, bytes, now_ms)
+  def add_hook(h) if self.hooks.find(h) == nil self.hooks.push(h) end end
+  def remove_hook(h) var i = self.hooks.find(h) if i != nil self.hooks.remove(i) end end
+
+  # Free the tap GPIOs for a while (bus speed detection), then listen again
+  def pause()
+    self.paused = true
+    for t: self.taps t.close() end
+  end
+  def resume()
+    for t: self.taps t.open(t.inverted) end
+    self.paused = false
+  end
+
+  # Change baud / format of both taps and, optionally, the polarity of each (map name -> bool)
+  def set_serial(baud, fmt, inv)
+    var mode = GreeBus.fmt_mode(fmt)
+    if mode == nil || baud < 50 || baud > 115200 return false end
+    self.baud = baud
+    self.fmt = string.toupper(fmt)
+    persist.bus_baud = baud
+    persist.bus_fmt = self.fmt
+    for t: self.taps
+      var i = (inv != nil && inv.contains(t.name)) ? inv[t.name] : t.inverted
+      t.reconfig(baud, mode, i)
+      if inv != nil && inv.contains(t.name)
+        if t.name == "RX" persist.bus_inv_rx = i else persist.bus_inv_tx = i end
+        self.saved_inv[t.name] = i
+      end
+    end
+    persist.save()
+    log(string.format("BUS: serial %d %s, RX %s, TX %s", baud, self.fmt, self.taps[0].inverted ? "inverted" : "normal",
+                      self.taps[1].inverted ? "inverted" : "normal"), 2)
+    return true
+  end
+
   def loop()
+    if self.paused return end
     var now = tasmota.millis()
     for t: self.taps
       for f: t.poll(now, self.gap, self.flen, self.MAX_LEN)
@@ -556,6 +624,9 @@ class GreeBus
           t.last_pub = h
         end
         t.last_frame = h
+        for hk: self.hooks
+          try hk(t.name, f, now) except .. as e, m log("BUS: hook error " + str(e) + " " + str(m), 2) end
+        end
       end
     end
   end
@@ -583,7 +654,7 @@ class GreeBus
   # A tap that receives bytes but no valid frame for AUTO_MS tries the other polarity.
   # A silent tap (unit in standby, nothing connected) is left alone.
   def check_polarity(now)
-    if !self.auto return end
+    if !self.auto || self.paused return end
     for t: self.taps
       var ref = (t.last_valid != nil) ? t.last_valid : t.opened
       if now - ref >= self.AUTO_MS && now - t.opened >= self.AUTO_MS && t.junk >= self.AUTO_BYTES
@@ -637,9 +708,10 @@ class GreeBus
       for v: r s.push(string.format("%d", v)) end
       tasmota.web_send(string.format("{s}Gree outdoor raw (%s){m}%s{e}", o.link(now), s.concat(" ")))
     end
+    var ser = (self.baud == self.BAUD && self.fmt == "8E1") ? "" : string.format(", %d %s", self.baud, self.fmt)
     for t: self.taps
-      tasmota.web_send(string.format("{s}Bus %s (%d, %s){m}%s{e}", t.name, t.count,
-                                     t.inverted ? "inv" : "norm", t.last_frame))
+      tasmota.web_send(string.format("{s}Bus %s (%d, %s%s){m}%s{e}", t.name, t.count,
+                                     t.inverted ? "inv" : "norm", ser, t.last_frame))
     end
   end
 
@@ -694,6 +766,17 @@ class GreeBus
       persist.save()
     end
     tasmota.resp_cmnd_str(str(self.gap))
+  end
+
+  def cmd_serial(payload)
+    var p = string.split(string.replace(str(payload == nil ? "" : payload), " ", ""), ",")
+    if size(p) == 2 && size(p[0]) > 0
+      if !self.set_serial(int(p[0]), p[1], nil)
+        tasmota.resp_cmnd_str("usage: BusSerial 600,8E1")
+        return
+      end
+    end
+    tasmota.resp_cmnd(string.format('{"BusSerial":"%d,%s"}', self.baud, self.fmt))
   end
 
   def cmd_len(payload)

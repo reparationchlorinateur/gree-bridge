@@ -14,6 +14,7 @@ A small ESP32-S3 board that goes inside a **Gree mini-split indoor unit** and ma
 - **BME280** (temperature, humidity, pressure) on a plug-in breakout, plus an I2C connector for more sensors.
 - **Home Assistant**: everything appears by MQTT discovery; a generated package per room adds the IR climate entity (via `tasmota_irhvac`), turbo and display switches, an energy counter for the Energy dashboard, and an automation that keeps the climate in line with the unit's own state.
 - **Apple Home without Home Assistant**: Tasmota's Matter thermostat (v.HVAC) over your normal Wi-Fi, kept in sync with the bus by `gree_matter.be`. Siri, Home app scenes and remote access through a home hub. Other Matter apps (Google Home, Alexa, SmartThings) should work too (not tested).
+- **Other units and brands**: a "Gree tools" page detects the wall remote's IR brand, measures the bus speed, format and polarity, and records short captures for decoding; a Claude Skill in this repository walks you through it and decodes the captures ([docs/adapting.md](docs/adapting.md)).
 - Wi-Fi recovery hotspot (press BOOT 6 times), OTA updates from the web page.
 
 ![Schematic](docs/images/schematic.png)
@@ -26,7 +27,8 @@ A small ESP32-S3 board that goes inside a **Gree mini-split indoor unit** and ma
 | [`hardware/case/`](hardware/case/) | 3D-printable case (PETG, no supports): STL, STEP, OpenSCAD source, fit check. Not printed yet |
 | [`firmware/`](firmware/) | Tasmota build settings and prebuilt binaries (ESP32-S3), Berry scripts `gree_bus.be` and `gree_matter.be`, GPIO template, host tests |
 | [`homeassistant/`](homeassistant/) | Room package generator (`new_room.sh`), package template, example dashboard card |
-| [`docs/`](docs/) | [Install guide](docs/install.md) (also without Home Assistant), [hardware description](docs/hardware.md), [bus protocol notes](docs/protocol.md), [ordering assembled boards from JLCPCB](docs/order-jlcpcb.md), interactive board viewer |
+| [`docs/`](docs/) | [Install guide](docs/install.md) (also without Home Assistant), [hardware description](docs/hardware.md), [bus protocol notes](docs/protocol.md), [adapting to other units](docs/adapting.md), [ordering assembled boards from JLCPCB](docs/order-jlcpcb.md), interactive board viewer |
+| [`.claude/skills/gree-bridge/`](.claude/skills/gree-bridge/), [`skill/`](skill/) | Claude Skill: install help, adapting to other units, capture analysis script ([how to add it](skill/README.md)) |
 
 ## Quick start
 
@@ -46,7 +48,7 @@ Every step, with the exact console lines: **[docs/install.md](docs/install.md)**
 
 ## Licences
 
-- Software (Berry scripts, Home Assistant files, tests, shell scripts): [MIT](LICENSE).
+- Software (Berry scripts, Home Assistant files, tests, shell and Python scripts, including the Skill's analysis script): [MIT](LICENSE).
 - Hardware (KiCad files, Gerbers, BOM) and documentation: [CC BY-SA 4.0](hardware/LICENSE.md).
 - The prebuilt firmware is Tasmota (GPL-3.0) built with [`user_config_override.h`](firmware/build/user_config_override.h); see [`firmware/build/README.md`](firmware/build/README.md).
 
