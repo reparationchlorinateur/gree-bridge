@@ -26,7 +26,7 @@ On GRJ819-A3:
 Where to solder the two bus taps on the GRJ819-A3 indoor board (component side, oriented as in the photo; the top row of pins of both optocouplers is the logic side):
 
 - **Blue: RX tap** → J1-3. U6 (RX opto), top-left pin, next to D16.
-- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin.
+- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin: the LED side, toward the MCU.
 - **Red box: hot side** (communication loop, about 56 V, mains nearby). The bottom pins of U3 and U6 are on the hot side: never solder, probe or route a wire there.
 
 ### Finding the tap points on another board

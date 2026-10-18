@@ -37,11 +37,15 @@ When the repository is available (Claude Code in the cloned repo), the authorita
 | Board hardware: connectors, circuit, BOM, assembly | `references/hardware.md` |
 | A capture file to look at | run `scripts/analyze_capture.py` (below) |
 
-Read the one that matches the task; don't load everything up front.
+Read the one that matches the task; don't load everything up front. The two pictures the docs refer to are in `assets/images/`: `j1_wiring.png` (where each J1 wire goes) and `gree_board_taps.jpg` (tap points and hot side on GRJ819-A3); show or describe them when the person wires the board, since "top-left pin" only makes sense with the photo.
+
+The tap points in the docs are for the Gree GRJ819-A3 indoor board (GWH12KF units of about 2013). For any other model or year, ask for the indoor board's label and a photo (power off) before giving wiring steps, and use `references/adapting.md` if it differs. Fixed-speed (non-inverter) units may have no data bus at all: IR only.
 
 ## Working with the person
 
 Many people doing this are handy but not firmware developers. Ask for what you need to know before giving steps: the unit's model number, the indoor board's label, what is already done (flashed? wired? Home Assistant?), and what they see. Give one stage at a time with the exact console lines, and ask them to report what the board shows before moving on. Prefer the board's web page and console over custom tooling.
+
+If they want to do it all in one evening, give the whole plan in order (bench flash and setup, then breaker off for wiring, then breaker on to test), so they can see the end, but keep the gates: wiring only with the breaker off, and the bus taps only once the tap points are confirmed for their board. IR alone (three wires) is a good first evening.
 
 If you can reach the board over the network yourself (Claude Code on their LAN), you can run console commands through Tasmota's HTTP API, with the web password if one is set:
 
@@ -65,6 +69,8 @@ Details and the reasons behind each step are in `references/adapting.md`.
 6. **Decoder**: write a Berry class for the new frames in the style of `GreeIndoor` / `GreeOutdoor` in `firmware/tasmota/gree_bus.be` (checksum check in `feed()`, fields, `to_json()`, Home Assistant discovery entries), and host tests in the style of `firmware/tests/`.
 
 ## Decoding a capture
+
+Paths are relative to this skill's folder; in the repository the script is `.claude/skills/gree-bridge/scripts/analyze_capture.py`.
 
 ```
 python3 scripts/analyze_capture.py gree_capture.txt              # full report

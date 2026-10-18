@@ -26,6 +26,18 @@ def main():
                 "made by skill/build_skill.py. Links are relative to that file in the repository. -->\n\n" % src)
         with open(os.path.join(ref, dst), "w", encoding="utf-8") as f:
             f.write(head + body)
+    # the two pictures the wiring steps refer to (the photo resized to keep the zip small)
+    img = os.path.join(SKILL, "assets", "images")
+    os.makedirs(img, exist_ok=True)
+    import shutil
+    shutil.copyfile(os.path.join(ROOT, "docs", "images", "j1_wiring.png"), os.path.join(img, "j1_wiring.png"))
+    try:
+        from PIL import Image
+        im = Image.open(os.path.join(ROOT, "docs", "images", "gree_board_taps.jpg"))
+        im.thumbnail((1400, 1400))
+        im.save(os.path.join(img, "gree_board_taps.jpg"), quality=80, optimize=True)
+    except ImportError:
+        shutil.copyfile(os.path.join(ROOT, "docs", "images", "gree_board_taps.jpg"), os.path.join(img, "gree_board_taps.jpg"))
     out = os.path.join(ROOT, "skill", "gree-bridge.zip")
     files = []
     for d, _, names in os.walk(SKILL):

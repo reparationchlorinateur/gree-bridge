@@ -16,7 +16,7 @@ The tools are on the board's **Gree tools** page (button on the main page; needs
 3. Check the levels: the RX input (J1-3) switches at about 0.55 V and suits a low-level opto output (0.1 V / 1 V on GRJ819-A3) as well as a 3.3 or 5 V logic line; the TX input (J1-4) wants a logic-level signal.
 4. Power: J1-1 takes 7 to 24 V from the logic side (the board's buck converter makes 5 V and 3.3 V). Use the logic ground.
 
-You can start with IR only (J1-1, J1-2, J1-5) and add the taps later.
+You can start with IR only (J1-1, J1-2, J1-5) and add the taps later. Fixed-speed (non-inverter) units may have no data bus at all between the indoor and outdoor units, only switched wires: IR is then all there is to connect.
 
 ## 2. IR: which brand?
 

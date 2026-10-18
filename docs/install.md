@@ -9,7 +9,7 @@ Hardware reference: [hardware.md](hardware.md). Bus decoding: [protocol.md](prot
 ## What you need
 
 - A board with J1 (5-pin JST XH), J5 (1x6 2.54 mm header), the U5 header and, optionally, J3 soldered, and a **GY-BME280** breakout (3.3 V version) on U5, chip side up.
-- A **3.3 V** USB-serial adapter, ideally with RTS and DTR pins (a CH340 adapter worked), and 6 jumper wires for J5.
+- A USB-serial adapter with **3.3 V logic** (the ESP32-S3 pins are not 5 V tolerant) and a 5 V supply pin, ideally with RTS and DTR (a CH340 adapter worked), and 6 jumper wires for J5. On adapters with a 3.3 V / 5 V jumper, set it to 3.3 V and take the board's power from the adapter's separate 5 V pin.
 - Chrome or Edge (the web flasher needs Web Serial), or `esptool.py`.
 - From this repository:
   - [`firmware/build/gree_tasmota32s3_15.6.0.factory.bin`](../firmware/build/) (first flash),
@@ -43,7 +43,7 @@ Topic: letters, digits, `_` and `-` only.
    | 5 | EN | RTS |
    | 6 | IO0 | DTR |
 
-   With RTS and DTR wired, the flasher puts the board in download mode by itself. Without them: hold BOOT, tap RESET, release BOOT, then connect.
+   J5-2 needs **5 V** (the board makes its own 3.3 V), but TX/RX must be **3.3 V** logic. With RTS and DTR wired, the flasher puts the board in download mode by itself. Without them: hold BOOT, tap RESET, release BOOT, then connect.
 2. In Chrome, open esptool-js: https://espressif.github.io/esptool-js/ . Default baud rate, **Connect**, pick the adapter's port.
 3. On a board that had other firmware: **Erase Flash** first.
 4. Program `gree_tasmota32s3_15.6.0.factory.bin` at address **0x0**. About a minute.
@@ -80,8 +80,8 @@ GPIO0 = BOOT button, GPIO4 = IR in, GPIO5 = IR out, GPIO8/9 = I2C (BME280, J3), 
 1. **Tools → Manage File system**: upload `gree_bus.be`, `gree_matter.be` and `autoexec.be`, plus `gree_tools.be` if you want the Gree tools page (IR brand detection, bus speed detection, captures: needed to adapt the board to another unit, see [adapting.md](adapting.md)).
 2. Console: `BrRestart`.
 3. Checks:
-   - The main page shows the BME280 rows (temperature, humidity, dew point, pressure) and "Gree link: no valid frame yet" (normal on the bench).
-   - `I2CScan` lists 0x76.
+   - The main page shows "Gree link: no valid frame yet" (normal on the bench) and, if the GY-BME280 breakout is fitted, its rows (temperature, humidity, dew point, pressure).
+   - With the breakout: `I2CScan` lists 0x76. Boards assembled by JLCPCB come without it (it is plugged on the U5 header).
 
 `gree_matter.be` does nothing until Matter is turned on (step 7b), so it can stay on boards that never use Apple Home.
 
@@ -95,25 +95,27 @@ GPIO0 = BOOT button, GPIO4 = IR in, GPIO5 = IR out, GPIO8/9 = I2C (BME280, J3), 
 |---|---|---|
 | 1 | +12 V | logic +12 V rail ("+12V" on the back) |
 | 2 | IR | IR receiver data line |
-| 3 | RX tap | U6 (RX opto) pin 4: top pin on the logic side, next to D16 |
-| 4 | TX tap | U3 (TX opto) LED side, toward the MCU |
+| 3 | RX tap | Gree U6 (RX opto) pin 4: top-left pin in the [photo](images/gree_board_taps.jpg), logic side, next to D16 |
+| 4 | TX tap | Gree U3 (TX opto): top-left pin in the [photo](images/gree_board_taps.jpg), the LED side, toward the MCU |
 | 5 | GND | logic "GND" (**not** "GND/", that is the hot side) |
 
-J1-3 and J1-4 are the two bus taps, not the programming TX/RX of J5. On another board, find the equivalent points first ([protocol.md](protocol.md), "Finding the tap points").
+J1-3 and J1-4 are the two bus taps, not the programming TX/RX of J5. "Gree U3 / U6" are parts of the Gree indoor board, not of the bridge (whose own U3 is its 74LVC14).
+
+These points are for the GRJ819-A3 board (label 301484411), used in GWH12KF units of that era. Other Gree models and years may use other boards: look at the board's label, compare with the photo, and if it differs find the points with [adapting.md](adapting.md), step 1. Fixed-speed (non-inverter) units may have no data bus between the indoor and outdoor units at all, only switched wires: then use IR only (J1-1, J1-2, J1-5). On another board, find the equivalent points first ([protocol.md](protocol.md), "Finding the tap points").
 
 ![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
 
 Where to solder the two bus taps on the GRJ819-A3 indoor board (component side, oriented as in the photo; the top row of pins of both optocouplers is the logic side):
 
 - **Blue: RX tap** → J1-3. U6 (RX opto), top-left pin, next to D16.
-- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin.
+- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin: the LED side, toward the MCU.
 - **Red box: hot side** (communication loop, about 56 V, mains nearby). The bottom pins of U3 and U6 are on the hot side: never solder, probe or route a wire there.
 
 Take +12 V and GND from the logic side too (points labelled `+12V` and `GND` on the back of the board), never from `GND/`.
 
 Breaker on, then check:
 - The wall remote works as before, and the console shows `IrReceived` with `"Protocol":"GREE"` at each press.
-- Within a few seconds of the unit running, the main page shows the Gree rows: room, coil, state, indoor fan, link OK, compressor, outdoor values.
+- About 30 s after the unit is powered (the indoor unit starts talking about 25 s after power-up), the main page shows the Gree rows: room, coil, state, indoor fan, link OK, compressor, outdoor values.
 - `BusAuto` shows the tap polarity. On the first board: RX inverted, TX normal (these are also the starting values). If a tap shows bytes but no frames, the script switches its polarity by itself within about 20 s and saves the one that works.
 - `Weblog 3` shows the raw `BUS: RX ...` lines (set back with `Weblog 2`).
 

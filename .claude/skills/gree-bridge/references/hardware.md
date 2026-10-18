@@ -32,15 +32,15 @@ The KiCad files were made with KiCad 7 and open in KiCad 7, 8 and 9. Every symbo
 |---|---|---|
 | 1 | +12V | +12 V rail, logic side ("+12V" label on the back) |
 | 2 | IR | IR receiver data line |
-| 3 | RX tap | U6 (RX opto) output pin 4: top pin next to D16. About 0.10 V idle, 1.07 V during bits |
-| 4 | TX tap | U3 (TX opto) LED drive node, logic side |
+| 3 | RX tap | Gree U6 (RX opto) output pin 4: top-left pin in the photo below, next to D16. About 0.10 V idle, 1.07 V during bits |
+| 4 | TX tap | Gree U3 (TX opto): top-left pin in the photo below, the LED side, toward the MCU (full logic levels) |
 | 5 | GND | logic "GND" (not "GND/", that is the hot side) |
 
 Cable: XHP-5 housing and SXH-001T-P0.6 crimps. Read [SAFETY.md](../SAFETY.md) before connecting anything.
 
 ![J1 wiring](images/j1_wiring.png)
 
-Tap points on the Gree board: blue = RX tap (U6), green = TX tap (U3), red box = hot side, never touch (details in [protocol.md](protocol.md)).
+Tap points on the Gree board: blue = RX tap (Gree U6), green = TX tap (Gree U3), red box = hot side, never touch (details in [protocol.md](protocol.md)). Gree U3 / U6 are parts of the Gree indoor board; the bridge's own U3 is its 74LVC14 (below).
 
 ![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
 
@@ -55,7 +55,7 @@ Tap points on the Gree board: blue = RX tap (U6), green = TX tap (U3), red box =
 ## How the circuit works
 
 - **Power:** J1-1 12 V → F1 (0.5 A resettable fuse) → D1 SS14 → U1 AP63205 buck (5 V, 1.1 MHz, L1 4.7 µH) → U2 AP2114H LDO (3.3 V). D3 status LED (GPIO21), D4 power LED.
-- **IR receive:** IR line → R5 1k → C12 100 pF / R6 1M → U3 (74LVC14 at 3.3 V, 5 V tolerant inputs) → GPIO4. Load on the Gree line about 1 MΩ.
+- **IR receive:** IR line → R5 1k → C12 100 pF / R6 1M → the bridge's U3 (74LVC14 at 3.3 V, 5 V tolerant inputs) → GPIO4. Load on the Gree line about 1 MΩ.
 - **IR transmit:** GPIO5 → R8 → Q1 BSS138 (R9 100k gate pull-down) → R7 220 Ω → IR line. Pulls the line low only while GPIO5 is high; off during boot, reset or when unpowered, so the wall remote keeps working.
 - **RX tap:** R10 47k → Q2 BC847C base (R11 1M, C13 100 pF) → collector, R16 22k to 3.3 V → U3 → GPIO6. Q2 turns on above about 0.55 V, between the two levels of the opto output, and draws about 10 µA from the Gree node. Q2 inverts like the Gree board's own transistor stage (the firmware's `BusAuto` finds the polarity anyway).
 - **TX tap:** R12 1k → C14 100 pF / R13 1M → U3 → GPIO7 (full logic levels on this node).
