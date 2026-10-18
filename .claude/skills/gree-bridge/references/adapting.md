@@ -46,9 +46,9 @@ The result shows the bytes it decoded, the bytes per burst (for example `[9, 11]
 
 A capture records, with millisecond times: the raw bytes from both taps, every IR command (wall remote, with raw timings, and the ones the board sends), the decoded Gree values when there are any, and your notes. It goes to `/gree_capture.txt` on the board (the previous one is kept as `/gree_capture_prev.txt`), is printed live in the console, and can be downloaded from the Gree tools page.
 
-Short captures are enough, because the unit repeats its state every second. A good set for a new unit:
+Short captures are enough, because the unit repeats its state every second. A real example from the GWH12KF: [captures/gwh12kf_startup_heat.txt](captures/gwh12kf_startup_heat.txt) (see [protocol.md](protocol.md), "A real start-up"). A good set for a new unit:
 
-1. **Start-up sequence**: unit off, press **Start-up sequence** (`GreeCapture startup`), then switch the unit on with the remote in a mode where the compressor will start: **Cool** with the setpoint well below the room temperature, or, when it is cold outside, **Heat** with the setpoint well above it. The capture keeps the 3 s before the command, records 5 s after it, then 5 s again 1, 2 and 3 minutes later (fan start, compressor start and ramp-up).
+1. **Start-up sequence**: unit off for 3 minutes (the compressor waits that long before it may restart), press **Start-up sequence** (`GreeCapture startup`), then switch the unit on with the remote in a mode where the compressor will start: **Cool** with the setpoint well below the room temperature, or, when it is cold outside, **Heat** with the setpoint well above it. The capture keeps the 3 s before the command, records 5 s after it, then 5 s again 1, 2 and 3 minutes later (fan start, compressor start and ramp-up).
 2. **One change at a time**, each with **Capture 5 s now** (`GreeCapture 5`) started just before the change: setpoint +1 °C, then +1 again; each mode (Cool, Heat, Dry, Fan, Auto); each fan speed; off.
 3. While a capture runs, add a note when something happens that the bus might show: `GreeMark outdoor fan started`, `GreeMark defrost`, `GreeMark compressor stopped`.
 4. Note the room and outdoor temperatures from a thermometer: they calibrate the temperature fields.

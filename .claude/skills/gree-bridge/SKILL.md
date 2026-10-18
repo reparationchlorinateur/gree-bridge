@@ -78,7 +78,7 @@ python3 scripts/analyze_capture.py gree_capture.txt --section events
 python3 scripts/analyze_capture.py gree_capture.txt --json       # for further processing
 ```
 
-`assets/example_capture.txt` is a synthetic start-up capture built from real GWH12KF frame layouts; use it to see what a good capture looks like.
+`assets/example_capture_gwh12kf_real.txt` is a real start-up capture from a GWH12KF (Heat 24 °C after 3 minutes off; what it shows is described in `references/protocol.md`, "A real start-up"), and `assets/example_capture.txt` a synthetic one in Cool; use them to see what a good capture looks like.
 
 Several capture files can be given at once; they are read as one, in order. The script splits the data into frames (Gree layouts when they fit, otherwise header bytes and lengths it learns), finds the checksum (XOR, sum, two's complement, CRC-8) per frame type, profiles every byte, lists which bytes changed after each IR command or note (bytes already drifting before it, and the checksum, are listed apart), and gives a timeline of every byte change, including the ones no event explains. Then reason about it:
 

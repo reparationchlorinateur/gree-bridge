@@ -95,6 +95,15 @@ About 50 ms after each indoor frame ends:
 
 Example, heating at 28 °C: indoor `07 15 9A 0C 00 03 BC 3C 0D` (room 21.0, coil about 34.6 °C, heat on, fan 3, setpoint 28), outdoor `08 2C 01 00 4C 78 61 2B 04 57 0F`.
 
+### A real start-up, recorded with the board
+
+[`captures/gwh12kf_startup_heat.txt`](captures/gwh12kf_startup_heat.txt) (October 2026, about 5 °C outside, 18 °C inside): the unit off for 3 minutes, then switched on in Heat 24 °C with the wall remote. Read with the Skill's analysis script, it shows:
+
+- the remote command at +3.0 s; the indoor frame shows it 1 s later (b3 `04` → `0C`: power bit on, mode 4 = heat);
+- the outdoor unit starts the compressor 2 s later at 16 Hz (o1 `10`, `11`, `12`, ... one more Hz per second), o2 → 1, o8 → 4 (heat); 46 Hz after one minute, 51 Hz after three;
+- the indoor fan stays at 0 while the coil warms (19 → 30 → 41 °C), goes to 1 at about 2 minutes (b6 `88` → `98`) and to 2 at 3 minutes (`A8`);
+- the outdoor coil drops from 13 °C to about −2 °C (evaporator), the discharge temperature rises, the compressor current settles around 2 to 2.5 A.
+
 Still open: the scale of o5 at high temperatures (needs a thermometer on the discharge pipe), o3 fault codes, the codes for dry, fan and auto in o8, defrost behaviour.
 
 ## IR line
@@ -102,3 +111,5 @@ Still open: the scale of o5 at high temperatures (needs a thermometer on the dis
 The indoor board's IR receiver output is a demodulated, active-low signal (idle high). Gree YB1F2 remote frames decode cleanly with IRremoteESP8266's `GREE` protocol (9 ms header). The bridge:
 - reads that line (GPIO4, through a Schmitt trigger), so wall-remote presses reach Home Assistant and Apple Home;
 - sends on it by pulling it low through a 220 Ω resistor and a MOSFET (GPIO5), with no 38 kHz carrier (`IR_SEND_USE_MODULATION false`). The receiver's own output is not disturbed when the bridge is idle, so the wall remote keeps working.
+
+Seen on the first board: with the unit off, the IR line carries some noise that the IR library reports as very short `UNKNOWN` codes (3 bits) and sometimes as `SONY` 12-bit codes. `gree_tools.be` ignores them (they never count as the remote, nor start a capture). The library's guess of the remote model varies between presses of the same remote (`YBOFB` / `YAW1F`); model `-1` (default) in the Home Assistant package and the Matter endpoint works with this remote.
