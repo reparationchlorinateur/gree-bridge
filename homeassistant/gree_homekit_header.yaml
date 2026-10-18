@@ -1,0 +1,12 @@
+#T Header for packages/gree_homekit.yaml (lines starting with "#T" are dropped). new_room.sh rebuilds that
+#T file from the "# homekit:" lines of every room package in packages/, so it always lists all rooms.
+# Apple Home (HomeKit) for the Gree heat pumps, through Home Assistant's HomeKit Bridge. Made by new_room.sh:
+# do not edit, run new_room.sh again instead. One bridge for all rooms: pair it once in the Home app.
+# Each room shows up as a thermostat (off/heat/cool/auto, target and room temperature) with a fan
+# control, plus its BME280 humidity sensor. Use this OR the board's own Matter thermostat for a room,
+# not both, or the unit shows twice in the Home app.
+homekit:
+  - name: Gree heat pumps
+    port: 21070
+    filter:
+      include_entities:

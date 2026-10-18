@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "GreeBridge")(type "KiCad")(uri "${KIPRJMOD}/GreeBridge.pretty")(options "")(descr "Gree bridge project footprints"))
+)

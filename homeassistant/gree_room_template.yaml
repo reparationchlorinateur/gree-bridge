@@ -1,0 +1,159 @@
+#T Template for new_room.sh (lines starting with "#T" are dropped from the generated file).
+#T Placeholders: DEVICE_NAME = the board's DeviceName, DEVICE_SLUG = that name as Home Assistant
+#T writes it in entity ids, TOPIC = the board's MQTT Topic.
+# Home Assistant package for ONE Gree indoor unit + bridge board (made by new_room.sh).
+# The sensors (room/coil/outdoor temperatures, compressor, power, links...) are NOT here: each board
+# announces them itself by MQTT discovery under its DeviceName. This file adds what discovery cannot:
+#   - the tasmota_irhvac climate entity (IR control, needs the tasmota_irhvac custom integration)
+#   - a turbo switch and a display (unit LED panel) switch
+#   - the outdoor energy counter (kWh, for the Energy dashboard), integrated from "Outdoor power"
+#   - an automation that keeps the climate in line with the unit's own state (Gree bus)
+# The "# homekit:" line below is read by new_room.sh to build packages/gree_homekit.yaml (Apple Home).
+# Board: DEVICE_NAME (Topic TOPIC)
+# homekit: climate.DEVICE_SLUG sensor.DEVICE_SLUG_bme280_humidity | DEVICE_NAME
+
+climate:
+  - platform: tasmota_irhvac
+    name: "DEVICE_NAME"
+    unique_id: TOPIC.irhvac
+    command_topic: "cmnd/TOPIC/IRhvac"
+    state_topic: "tele/TOPIC/RESULT"
+    # Room temperature from the unit's own sensor (Gree bus). The BME280 sits in the unit's air
+    # stream: fine while the unit is off, but it reads the conditioned air (and 100 % humidity
+    # while cooling) when it runs. If the BME280 is mounted outside the unit, use
+    # sensor.DEVICE_SLUG_bme280_temperature here and add humidity_sensor: sensor.DEVICE_SLUG_bme280_humidity
+    temperature_sensor: sensor.DEVICE_SLUG_room_temperature_unit
+    protocol: "GREE"
+    min_temp: 16
+    max_temp: 31
+    target_temp: 21
+    initial_operation_mode: "off"
+    away_temp: 24
+    precision: 1
+    supported_modes:
+      - "heat"
+      - "cool"
+      - "dry"
+      - "fan_only"
+      - "auto"
+      - "off"
+    supported_fan_speeds:
+      - "auto"
+      - "min"
+      - "medium"
+      - "max"
+    supported_swing_list:
+      - "off"
+      - "vertical"
+    default_quiet_mode: "Off"
+    default_turbo_mode: "Off"
+    default_econo_mode: "Off"
+    hvac_model: "-1"
+    celsius_mode: "On"
+    default_light_mode: "On"
+    default_filter_mode: "Off"
+    default_clean_mode: "Off"
+    default_beep_mode: "Off"
+    default_sleep_mode: "-1"
+
+template:
+  - switch:
+      - name: "DEVICE_NAME turbo"
+        unique_id: TOPIC_turbo_switch
+        state: "{{ is_state_attr('climate.DEVICE_SLUG', 'turbo', 'on') }}"
+        turn_on:
+          action: tasmota_irhvac.set_turbo
+          data:
+            entity_id: climate.DEVICE_SLUG
+            turbo: "on"
+        turn_off:
+          action: tasmota_irhvac.set_turbo
+          data:
+            entity_id: climate.DEVICE_SLUG
+            turbo: "off"
+      - name: "DEVICE_NAME display"
+        unique_id: TOPIC_display_switch
+        icon: mdi:television-ambient-light
+        state: "{{ is_state_attr('climate.DEVICE_SLUG', 'light', 'on') }}"
+        turn_on:
+          action: tasmota_irhvac.set_light
+          data:
+            entity_id: climate.DEVICE_SLUG
+            light: "on"
+        turn_off:
+          action: tasmota_irhvac.set_light
+          data:
+            entity_id: climate.DEVICE_SLUG
+            light: "off"
+
+# Outdoor unit energy (compressor + outdoor fan + board, estimated), for the Energy dashboard
+sensor:
+  - platform: integration
+    name: "DEVICE_NAME outdoor energy"
+    unique_id: TOPIC_outdoor_energy
+    source: sensor.DEVICE_SLUG_outdoor_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3
+    max_sub_interval:
+      minutes: 2
+
+# Follow the unit: the IR climate only knows what Home Assistant sent and what the board heard from
+# the wall remote. This brings it in line with what the unit itself reports on its indoor/outdoor bus
+# (on/off, mode, setpoint), e.g. after a restart or a remote press the board did not catch. It only
+# updates Home Assistant (a state message to tasmota_irhvac): nothing is sent to the unit.
+# Waits until the bus values and the climate have been steady for about 15 s, so it never fights a
+# command that is on its way. In Auto the bus shows the mode the unit chose, so an Auto
+# climate is left alone while the unit runs. Each correction is written to the logbook.
+automation:
+  - id: TOPIC_follow_unit
+    alias: "DEVICE_NAME: follow the unit (Gree bus)"
+    description: "Keeps climate.DEVICE_SLUG in line with the unit's own on/off, mode and setpoint (Gree bus). Updates Home Assistant only; sends nothing to the unit. Made by new_room.sh."
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.DEVICE_SLUG_power_unit
+          - sensor.DEVICE_SLUG_mode_unit
+          - sensor.DEVICE_SLUG_setpoint_unit
+        for: "00:00:15"
+      - trigger: time_pattern
+        minutes: "/5"
+    variables:
+      unit_on: "{{ is_state('binary_sensor.DEVICE_SLUG_power_unit', 'on') }}"
+      bus_mode: "{{ states('sensor.DEVICE_SLUG_mode_unit') }}"
+      bus_sp: "{{ states('sensor.DEVICE_SLUG_setpoint_unit') | int(0) }}"
+      ha_mode: "{{ states('climate.DEVICE_SLUG') }}"
+      ha_sp: "{{ state_attr('climate.DEVICE_SLUG', 'temperature') | int(0) }}"
+      steady: >-
+        {%- set ns = namespace(ok=true) -%}
+        {%- for e in ['climate.DEVICE_SLUG', 'binary_sensor.DEVICE_SLUG_power_unit',
+                      'sensor.DEVICE_SLUG_mode_unit', 'sensor.DEVICE_SLUG_setpoint_unit'] -%}
+          {%- set s = expand(e) | first | default(none) -%}
+          {%- if s is none or (now() - s.last_updated).total_seconds() < 12 -%}{%- set ns.ok = false -%}{%- endif -%}
+        {%- endfor -%}
+        {{- ns.ok and is_state('binary_sensor.DEVICE_SLUG_bus_link', 'on')
+            and states('binary_sensor.DEVICE_SLUG_power_unit') in ['on', 'off']
+            and bus_mode in ['auto', 'cool', 'dry', 'fan_only', 'heat'] and 16 <= bus_sp <= 30 -}}
+      differs: >-
+        {%- if not unit_on -%}{{- ha_mode != 'off' -}}
+        {%- elif ha_mode == 'auto' -%}{{- false -}}
+        {%- else -%}{{- ha_mode != bus_mode or ha_sp != bus_sp -}}{%- endif -%}
+    conditions:
+      - condition: template
+        value_template: "{{ steady and differs }}"
+    actions:
+      - action: mqtt.publish
+        data:
+          topic: "tele/TOPIC/RESULT"
+          payload: >-
+            {% if unit_on %}{{ {'IRHVAC': {'Vendor': 'GREE', 'Power': 'On', 'Mode': bus_mode, 'Temp': bus_sp}} | to_json }}
+            {%- else %}{{ {'IRHVAC': {'Vendor': 'GREE', 'Power': 'Off', 'Temp': bus_sp}} | to_json }}{% endif %}
+      - action: logbook.log
+        data:
+          name: "DEVICE_NAME"
+          entity_id: climate.DEVICE_SLUG
+          message: >-
+            follows the unit (Gree bus): {{ (bus_mode ~ ' ' ~ bus_sp ~ ' °C') if unit_on else 'off' }},
+            Home Assistant had {{ ha_mode }}{{ (' ' ~ ha_sp ~ ' °C') if ha_mode != 'off' else '' }}

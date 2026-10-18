@@ -1,0 +1,2 @@
+36a7d1892df516634da7048bfc33d167  gree_tasmota32s3_15.6.0.bin
+1ea5facd3f9c6872a355cce486ddd923  gree_tasmota32s3_15.6.0.factory.bin

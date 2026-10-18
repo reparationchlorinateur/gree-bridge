@@ -1,0 +1,43 @@
+# Example dashboard card for one room (Edit dashboard > Add card > Manual, paste this).
+# Replace bedroom_heat_pump with your room's slug (the DeviceName as Home Assistant writes it).
+# Needs these HACS frontend cards: simple-thermostat and card-tools (for hui-element).
+type: entities
+title: Bedroom heat pump
+show_header_toggle: false
+state_color: false
+entities:
+  - type: custom:hui-element
+    card_type: custom:simple-thermostat
+    entity: climate.bedroom_heat_pump
+    step_size: 1
+    header: false
+    layout:
+      mode:
+        names: true
+        icons: true
+        headings: false
+    hide:
+      state: true
+    control:
+      hvac:
+        auto: false
+      fan: true
+    sensors:
+      - entity: sensor.bedroom_heat_pump_outdoor_air_temperature
+        name: Outdoor
+      - entity: sensor.bedroom_heat_pump_outdoor_power
+        name: Power
+      - entity: sensor.bedroom_heat_pump_bme280_humidity
+        name: Humidity
+      - entity: sensor.bedroom_heat_pump_bme280_pressure
+        name: Pressure
+  - entity: switch.bedroom_heat_pump_turbo
+    name: Turbo
+    icon: mdi:car-turbocharger
+  - entity: switch.bedroom_heat_pump_display
+    name: Display
+    icon: mdi:television-ambient-light
+  - entity: sensor.bedroom_heat_pump_compressor_frequency
+    name: Compressor
+  - entity: binary_sensor.bedroom_heat_pump_bus_link
+    name: Bus link
