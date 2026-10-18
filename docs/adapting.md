@@ -36,7 +36,7 @@ Switch the unit on, then on the Gree tools page press **Detect speed and format*
 - **speed** from the pulse widths (300 to 19200 baud; a non-standard speed shows as "about N baud"),
 - **format** by decoding the bytes with each common format (8E1, 8N1, 7E1, ...) and keeping the one without framing or parity errors.
 
-The result shows the bytes it decoded and the bytes per burst (for example `[9, 11]`: a 9-byte frame and an 11-byte reply), and how many valid Gree frames it found. **Use the detected settings** applies them (`BusSerial` and the polarity of each tap); when they are not Gree's 600 8E1, `BusAuto` is turned off, because it looks for Gree frames and would keep flipping the polarity.
+The result shows the bytes it decoded, the bytes per burst (for example `[9, 11]`: a 9-byte frame and an 11-byte reply), the gaps between bursts in ms (on GWH12KF the reply follows about 50 ms after the frame), and how many valid Gree frames it found. **Use the detected settings** applies them (`BusSerial` and the polarity of each tap); when they are not Gree's 600 8E1, `BusAuto` is turned off, because it looks for Gree frames and would keep flipping the polarity.
 
 "No activity": the unit may be in standby (the indoor unit stops talking some time after it is switched off), or the tap is not on the right node.
 
@@ -46,12 +46,16 @@ A capture records, with millisecond times: the raw bytes from both taps, every I
 
 Short captures are enough, because the unit repeats its state every second. A good set for a new unit:
 
-1. **Start-up sequence**: unit off, press **Start-up sequence** (`GreeCapture startup`), then switch the unit on in **Cool** with the remote. The capture keeps the 3 s before the command, records 5 s after it, then 5 s again 1, 2 and 3 minutes later (fan start, compressor start and ramp-up).
+1. **Start-up sequence**: unit off, press **Start-up sequence** (`GreeCapture startup`), then switch the unit on with the remote in a mode where the compressor will start: **Cool** with the setpoint well below the room temperature, or, when it is cold outside, **Heat** with the setpoint well above it. The capture keeps the 3 s before the command, records 5 s after it, then 5 s again 1, 2 and 3 minutes later (fan start, compressor start and ramp-up).
 2. **One change at a time**, each with **Capture 5 s now** (`GreeCapture 5`) started just before the change: setpoint +1 °C, then +1 again; each mode (Cool, Heat, Dry, Fan, Auto); each fan speed; off.
 3. While a capture runs, add a note when something happens that the bus might show: `GreeMark outdoor fan started`, `GreeMark defrost`, `GreeMark compressor stopped`.
 4. Note the room and outdoor temperatures from a thermometer: they calibrate the temperature fields.
 
 `GreeCapture 5,60,10` gives 10 captures of 5 s, one per minute: useful for slow things (defrost, temperatures).
+
+**Download each capture before starting the next one**: the board keeps only the last two (`/gree_capture.txt` and `/gree_capture_prev.txt`). Name them after what you did (`startup-cool.txt`, `setpoint-22-23.txt`, ...).
+
+Raw bytes are split on silence (`BusGap`, 300 ms), so a reply that follows a frame within 300 ms is in the same line as the frame; the analysis script separates them again. For the delay between frame and reply, use the gaps shown by the bus detection.
 
 ## 5. Decoding
 
@@ -60,11 +64,15 @@ The analysis script `.claude/skills/gree-bridge/scripts/analyze_capture.py` (pla
 - **frames**: the capture split into frames (Gree layouts when they fit, otherwise header bytes and lengths it learns), with how often each one repeats;
 - **checksum**: which checksum (XOR, sum, two's complement, CRC-8) over which bytes matches every frame of each type;
 - **columns**: for each byte: constant or not, values, range, as an NTC temperature and as value − 40 (both common in HVAC);
-- **events**: for each IR command or note, which bytes changed after it (for example setpoint 22 → 21: `b6 B6->B5`, so the setpoint is in the low bits of byte 6).
+- **events**: for each IR command or note, which bytes changed after it (for example setpoint 22 → 21: `b6 B6->B5`, so the setpoint is in the low bits of byte 6). Bytes that were already changing before it (temperatures, counters) and the checksum are listed apart as "drifting";
+- **timeline**: every change of every byte with its time, including the ones no command explains (the compressor starting by itself, a defrost).
 
 ```
 python3 .claude/skills/gree-bridge/scripts/analyze_capture.py gree_capture.txt
+python3 .claude/skills/gree-bridge/scripts/analyze_capture.py startup-cool.txt setpoint-22-23.txt   # several, read as one
 ```
+
+In short captures a slowly changing temperature can look as if a command changed it; check the timeline and repeat the command once before trusting a field.
 
 Then a decoder is written for the new layout, in the style of `GreeIndoor` / `GreeOutdoor` in `gree_bus.be` (a class with `feed(frame)` that checks the checksum and fills the fields, plus the Home Assistant discovery list).
 

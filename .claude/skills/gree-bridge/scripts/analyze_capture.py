@@ -5,7 +5,11 @@
     python3 analyze_capture.py gree_capture.txt --section events
     python3 analyze_capture.py gree_capture.txt --json          # machine-readable
 
-Sections: summary, frames, checksum, columns, events, gree (all by default).
+    python3 analyze_capture.py start-up.txt setpoint.txt modes.txt   # several, read as one
+
+Sections: summary, frames, checksum, columns, events, timeline, gree (all by default).
+"events": what changed after each IR command / note (bytes already drifting before it are listed
+apart); "timeline": every change of every byte with its time, also the ones no event explains.
 Only the Python 3 standard library is used.
 
 Capture format (one event per line, '#' = comment):
@@ -193,6 +197,19 @@ def find_checksums(frames):
         res["%s (%d bytes, %d frames)" % (typ, n, len(fs))] = sorted(best.values(), key=lambda f: f["from"] - f["to"])[:4]
     return res
 
+def checksum_positions(frames):
+    """{(type, length): position} of the checksum byte found for each frame type"""
+    out = {}
+    for _, _, typ, b in frames:
+        out.setdefault((typ, len(b)), None)
+    res = find_checksums(frames)
+    for key in list(out):
+        label = "%s (%d bytes, " % key
+        for k, v in res.items():
+            if k.startswith(label) and v:
+                out[key] = v[0]["pos"]
+    return out
+
 # --------------------------------------------------------------------------- columns
 def ntc_c(raw, k=1.0, beta=3950.0):
     """20 kOhm NTC on a 20 kOhm divider read as 8 bits (Gree coil / outdoor sensors), k = Rpullup/R25."""
@@ -214,6 +231,9 @@ def columns(frames):
             c = {"byte": i, "min": min(vals), "max": max(vals), "distinct": len(distinct), "changes": changes}
             if len(distinct) == 1:
                 c["note"] = "constant 0x%02X" % distinct[0]
+                v = distinct[0]
+                if 20 <= v <= 235 and ntc_c(v) is not None:
+                    c["if_temperature"] = "NTC %.1f C, or %d C (value - 40), or %.1f C (value / 2)" % (ntc_c(v), v - 40, v / 2)
             elif len(distinct) <= 6:
                 c["values"] = ["0x%02X" % v for v in distinct]
             if len(distinct) > 1 and max(vals) - min(vals) > 2 and 20 <= min(vals) and max(vals) <= 235:
@@ -235,10 +255,12 @@ def ir_state(j):
     keys = ["Vendor", "Power", "Mode", "Temp", "FanSpeed", "SwingV", "Turbo", "Light"]
     return {k: h[k] for k in keys if k in h}
 
-def events(cap, frames, settle_ms=3000):
+def events(cap, frames, settle_ms=3000, look_back_ms=15000, ck=None):
     """For each IR command / mark: which frame bytes changed between the last frame before it and
     the first frame settle_ms after it (the unit needs a moment to react), or the last frame of
-    the same capture window when the window ends sooner."""
+    the same capture window when the window ends sooner. Bytes that were already changing in the
+    look_back_ms before the event are listed apart ("drifting"): a temperature or a counter, not
+    something the event caused."""
     groups = collections.defaultdict(list)
     for t, src, typ, b in frames:
         groups[(typ, len(b))].append((t, b))
@@ -251,19 +273,58 @@ def events(cap, frames, settle_ms=3000):
             e["state"] = ir_state(j)
             if kind == "IR":
                 e["protocol"] = j.get("Protocol")
-        changes = {}
+        changes, drifting = {}, {}
         for (typ, n), fs in groups.items():
-            before = [b for ft, b in fs if ft < t]
+            before = [(ft, b) for ft, b in fs if t - look_back_ms <= ft < t]
             near = [(ft, b) for ft, b in fs if t < ft <= t + 15000]      # same capture window
             if not before or not near:
                 continue
             settled = [b for ft, b in near if ft >= t + settle_ms]
-            b0, b1 = before[-1], (settled[0] if settled else near[-1][1])
-            d = ["b%d %02X->%02X" % (i, b0[i], b1[i]) for i in range(n) if b0[i] != b1[i]]
+            b0, b1 = before[-1][1], (settled[0] if settled else near[-1][1])
+            moving = {i for i in range(n) if len({b[i] for _, b in before}) > 1}
+            if ck and ck.get((typ, n)) is not None:
+                moving.add(ck[(typ, n)])          # the checksum follows every other change
+            d = ["b%d %02X->%02X" % (i, b0[i], b1[i]) for i in range(n) if b0[i] != b1[i] and i not in moving]
+            m = ["b%d %02X->%02X" % (i, b0[i], b1[i]) for i in range(n) if b0[i] != b1[i] and i in moving]
             if d:
                 changes["%s/%d" % (typ, n)] = d
+            if m:
+                drifting["%s/%d" % (typ, n)] = m
         e["changed"] = changes
+        e["drifting"] = drifting
         out.append(e)
+    return out
+
+def timeline(cap, frames, events_list, near_ms=4000, ck=None):
+    """Every change of every byte, with its time, marked when it follows an event within near_ms.
+    Bytes that change on (almost) every frame are summarised (steady drift, counter...)."""
+    ev_times = [(e["t_ms"], e["kind"]) for e in events_list]
+    groups = collections.defaultdict(list)
+    for t, src, typ, b in frames:
+        groups[(typ, len(b), src)].append((t, b))
+    out = {}
+    for (typ, n, src), fs in groups.items():
+        if len(fs) < 2:
+            continue
+        rows = []
+        for i in range(n):
+            if ck and ck.get((typ, n)) == i:
+                continue                          # checksum byte: changes with everything else
+            ch = [(fs[k][0], fs[k - 1][1][i], fs[k][1][i]) for k in range(1, len(fs)) if fs[k][1][i] != fs[k - 1][1][i]]
+            if not ch:
+                continue
+            if len(ch) > 8 or len(ch) >= 0.7 * (len(fs) - 1):
+                steps = [((c[2] - c[1] + 128) % 256) - 128 for c in ch]
+                kind = "steady +%d" % steps[0] if len(set(steps)) == 1 and steps[0] > 0 else \
+                       "steady %d" % steps[0] if len(set(steps)) == 1 else "varies"
+                rows.append("b%d: %d changes (%s), %02X .. %02X" % (i, len(ch), kind, ch[0][1], ch[-1][2]))
+                continue
+            for ct, a, b in ch:
+                cause = [k for et, k in ev_times if 0 <= ct - et <= near_ms]
+                rows.append("b%d: %02X->%02X at %d ms%s" % (i, a, b, ct, (" (after " + cause[-1] + ")") if cause else
+                                                               " (no event just before)"))
+        if rows:
+            out["%s/%d on %s" % (typ, n, src)] = rows
     return out
 
 # --------------------------------------------------------------------------- Gree decoding
@@ -309,8 +370,13 @@ def report(cap, sections, as_json):
         res["checksum"] = find_checksums(frames)
     if "columns" in sections:
         res["columns"] = columns(frames)
-    if "events" in sections:
-        res["events"] = events(cap, frames)
+    if "events" in sections or "timeline" in sections:
+        ck = checksum_positions(frames)
+        ev = events(cap, frames, ck=ck)
+        if "events" in sections:
+            res["events"] = ev
+        if "timeline" in sections:
+            res["timeline"] = timeline(cap, frames, ev, ck=ck)
     if "gree" in sections and framing == "gree":
         last = {}
         for t, src, typ, b in frames:
@@ -333,27 +399,51 @@ def report(cap, sections, as_json):
                     print("  b%-2d min %3d max %3d distinct %3d changes %3d  %s" % (
                         c["byte"], c["min"], c["max"], c["distinct"], c["changes"],
                         "; ".join("%s %s" % (k, v) for k, v in extra.items())))
+        elif sec == "timeline":
+            for g, rows in val.items():
+                print(g)
+                for r in rows:
+                    print("  " + r)
         elif sec == "events":
             for e in val:
                 what = e.get("text") or json.dumps(e.get("state"))
                 print("%7d ms %-6s %s" % (e["t_ms"], e["kind"], what))
                 for g, d in e["changed"].items():
-                    print("            %s: %s" % (g, ", ".join(d)))
-                if not e["changed"]:
+                    print("            changed  %s: %s" % (g, ", ".join(d)))
+                for g, d in e.get("drifting", {}).items():
+                    print("            drifting %s: %s  (already changing before, or the checksum: not caused by this)" % (g, ", ".join(d)))
+                if not e["changed"] and not e.get("drifting"):
                     print("            (no frame change seen, or no frames around it)")
         else:
             print(json.dumps(val, indent=1))
         print()
 
+def merge(caps):
+    """Several captures one after the other: times of each one are shifted to follow the previous."""
+    if len(caps) == 1:
+        return caps[0]
+    out = {"comments": [], "chunks": [], "events": [], "gree": [], "windows": [], "bus": caps[0]["bus"]}
+    offset = 0
+    for k, c in enumerate(caps):
+        out["comments"] += c["comments"]
+        out["chunks"] += [(t + offset, s, b) for t, s, b in c["chunks"]]
+        out["events"] += [(t + offset, s, j) for t, s, j in c["events"]]
+        out["events"].append((offset, "MARK", {"text": "start of capture file %d" % (k + 1)}))
+        out["gree"] += [(t + offset, j) for t, j in c["gree"]]
+        out["windows"] += [(w[0] + 100 * k, w[1], w[2]) for w in c["windows"]]
+        last = max([t for t, _, _ in c["chunks"]] + [t for t, _, _ in c["events"]] + [0])
+        offset += last + 60000          # a minute apart, so events never mix across files
+    return out
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("capture")
+    ap.add_argument("capture", nargs="+", help="one or more capture files, analysed as one, in this order")
     ap.add_argument("--section", action="append",
-                    choices=["summary", "frames", "checksum", "columns", "events", "gree"])
+                    choices=["summary", "frames", "checksum", "columns", "events", "timeline", "gree"])
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
-    sections = a.section or ["summary", "frames", "checksum", "columns", "events", "gree"]
-    report(parse(a.capture), sections, a.json)
+    sections = a.section or ["summary", "frames", "checksum", "columns", "events", "timeline", "gree"]
+    report(merge([parse(p) for p in a.capture]), sections, a.json)
 
 if __name__ == "__main__":
     sys.exit(main())

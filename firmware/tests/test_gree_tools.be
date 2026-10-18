@@ -152,6 +152,7 @@ check("Gree, idle low: 600 baud 8E1, inverted, both frames found",
 r = det(gree_wave(1, 4))
 check("Gree, idle high: normal polarity", r["baud"] == 600 && r["fmt"] == "8E1" && r["inverted"] == false && r["gree"] == 2)
 check("measured baud close to 600", r["measured"] >= 590 && r["measured"] <= 610)
+check("gap between the indoor frame and the reply: about 50 ms", size(r["gaps_ms"]) == 1 && r["gaps_ms"][0] >= 48 && r["gaps_ms"][0] <= 55)
 
 # a newer Gree-like line: 1200 baud 8E1, other frame layout, no idle bit
 var f31 = bytes("3104141C2A0000000000E1")

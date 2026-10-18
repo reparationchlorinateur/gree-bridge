@@ -82,7 +82,7 @@ The scripts are tested on a computer with the [Berry](https://github.com/berry-l
 ```
 berry test_gree_bus.be          # 74 tests: indoor and outdoor frames, links, polarity, discovery, commands, hooks
 berry test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
-berry test_gree_tools.be        # 45 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
+berry test_gree_tools.be        # 46 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
                                 #           IR brand, captures (single, sequence, start-up), web page
 berry test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
 ```

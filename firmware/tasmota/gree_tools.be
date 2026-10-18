@@ -278,15 +278,21 @@ class GreeDetect
     var f = best[0]
     var ct = (1 + int(f[0]) + ((f[1] == "N") ? 0 : 1) + int(f[2])) * T
     var bursts = []
+    var gaps = []                                  # idle time between the end of a burst and the next one (ms)
     var n = 0
     var prev = nil
     for t: d["times"]
-      if prev != nil && t - prev > 3 * ct bursts.push(n) n = 0 end
+      if prev != nil && t - prev > 3 * ct
+        bursts.push(n)
+        if size(gaps) < 6 gaps.push(int((t - prev - ct) / 1000 + 0.5)) end
+        n = 0
+      end
       n += 1
       prev = t
     end
     if n > 0 bursts.push(n) end
     res["bursts"] = bursts
+    res["gaps_ms"] = gaps
     return res
   end
 
@@ -743,7 +749,8 @@ class GreeTools
         webserver.content_send("<p>" + e(GreeDetect.summary(k, r)) + "</p>")
         if r.contains("sample")
           webserver.content_send("<p><small><code>" + e(r["sample"]) + "</code><br>bytes per burst: " +
-                                 e(json.dump(r.find("bursts"))) + "</small></p>")
+                                 e(json.dump(r.find("bursts"))) + ", gaps between bursts (ms): " +
+                                 e(json.dump(r.find("gaps_ms"))) + "</small></p>")
         end
       end
       var ds = self.detected_serial()

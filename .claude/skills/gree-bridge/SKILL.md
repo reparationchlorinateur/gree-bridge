@@ -64,7 +64,7 @@ Details and the reasons behind each step are in `references/adapting.md`.
 1. **Tap points** on the new board, logic side only, measured with the unit running (voltmeter or scope). IR first: IR alone already gives control.
 2. **IR brand**: press the wall remote; the Gree tools page (or `IrDetect`) shows the brand, model and protocol Tasmota decoded. That brand goes into the Home Assistant package (`protocol:`) and the Matter endpoint (vendor). Not recognised: make a capture, which records raw IR timings.
 3. **Bus**: unit on, `BusDetect` (Gree tools page: Detect speed and format). It reports baud, format (8E1, 8N1, ...), polarity, sample bytes and bytes per burst. `BusDetect apply` uses them.
-4. **Captures**: the start-up sequence (`GreeCapture startup`, then switch the unit on with the remote), then one 5 s capture per single change (setpoint, mode, fan, off), with `GreeMark` notes for things the person hears or sees, and thermometer readings for calibration.
+4. **Captures**: the start-up sequence (`GreeCapture startup`, then switch the unit on with the remote in a mode where the compressor will start: Cool well below the room temperature, or Heat well above it when it is cold outside), then one 5 s capture per single change (setpoint, mode, fan, off), with `GreeMark` notes for things the person hears or sees, and thermometer readings for calibration. The board keeps only the last two captures: have them download each one, named after what they did.
 5. **Decode**: run the analysis script, then interpret (next section).
 6. **Decoder**: write a Berry class for the new frames in the style of `GreeIndoor` / `GreeOutdoor` in `firmware/tasmota/gree_bus.be` (checksum check in `feed()`, fields, `to_json()`, Home Assistant discovery entries), and host tests in the style of `firmware/tests/`.
 
@@ -80,12 +80,13 @@ python3 scripts/analyze_capture.py gree_capture.txt --json       # for further p
 
 `assets/example_capture.txt` is a synthetic start-up capture built from real GWH12KF frame layouts; use it to see what a good capture looks like.
 
-The script splits the data into frames (Gree layouts when they fit, otherwise header bytes and lengths it learns), finds the checksum (XOR, sum, two's complement, CRC-8) per frame type, profiles every byte, and lists which bytes changed after each IR command or note. Then reason about it:
+Several capture files can be given at once; they are read as one, in order. The script splits the data into frames (Gree layouts when they fit, otherwise header bytes and lengths it learns), finds the checksum (XOR, sum, two's complement, CRC-8) per frame type, profiles every byte, lists which bytes changed after each IR command or note (bytes already drifting before it, and the checksum, are listed apart), and gives a timeline of every byte change, including the ones no event explains. Then reason about it:
 
 - **Structure first**: constant bytes (headers, terminators, model codes), the checksum, request vs reply (the indoor unit usually polls about once a second; the outdoor reply follows within ~50-250 ms on the RX tap only).
 - **Commands are the key**: an IR command with a known state (`Temp`, `Mode`, `FanSpeed`, `Power`) followed by a byte change identifies the field. A setpoint step of 1 °C that moves a nibble by 1 gives the setpoint and its offset (Gree: `setpoint - 16` in the low nibble of b6; other units often `value + 40` or `value * 2`).
 - **Temperatures** move slowly and smoothly. Try the 8-bit NTC divider formula (20 kOhm, B 3950: `T = 1/(1/298.15 + ln((256-raw)/raw)/3950) - 273.15`), `raw - 40` and `raw / 2`, and compare with the thermometer readings and the unit's display. Gree reports the actual fan speed and coil temperatures, not the remote's settings, so expect delays (fan starts when the coil is warm in heat).
 - **Compressor fields** start at 0, ramp after the outdoor unit starts (about 1 Hz per second on GWH12KF) and go back to 0 when it stops; current tracks frequency.
+- **Don't trust one coincidence.** In 5 s windows a slow temperature can change right after a command by chance; check the timeline (was it moving before? does it keep moving?) and ask for the command to be repeated before calling a field confirmed. A change no event explains (the compressor starting on its own) is information too.
 - **State what is confirmed and what is a guess.** Present a table per frame type: byte, meaning, formula, confidence (confirmed by a command / consistent / guess), and say which capture would confirm the guesses (for example "set 18 then 30 °C to confirm the setpoint range", "a capture in heat during a defrost").
 
 ## Sharing results
