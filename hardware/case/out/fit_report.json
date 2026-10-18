@@ -17,7 +17,7 @@
    "limit": 1,
    "op": "==",
    "ok": true,
-   "note": "11.5 cm3, ~15 g PETG solid-equivalent"
+   "note": "10.9 cm3, ~14 g PETG solid-equivalent"
   },
   {
    "group": "mesh",
@@ -30,17 +30,8 @@
   },
   {
    "group": "mesh",
-   "name": "base x lid overlap (mm3)",
-   "value": 0.0,
-   "limit": 0.01,
-   "op": "<=",
-   "ok": true,
-   "note": "assembled, must not intersect"
-  },
-  {
-   "group": "mesh",
    "name": "lid x cap overlap (mm3)",
-   "value": -0.0,
+   "value": 0.0,
    "limit": 0.01,
    "op": "<=",
    "ok": true,
@@ -67,7 +58,7 @@
   {
    "group": "mesh",
    "name": "lid: OpenSCAD vs CadQuery symmetric difference (% of volume)",
-   "value": 0.373,
+   "value": 0.356,
    "limit": 0.5,
    "op": "<=",
    "ok": true,
@@ -110,6 +101,15 @@
    "note": "hole at X 88.5, slots at [3.6, 14.0] mm from the wall"
   },
   {
+   "group": "mesh",
+   "name": "base x lid overlap outside the latch hooks (mm3)",
+   "value": -0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "only the hooks touch, by design"
+  },
+  {
    "group": "board",
    "name": "board x base overlap (mm3)",
    "value": 0.0,
@@ -125,7 +125,16 @@
    "limit": 0.01,
    "op": "<=",
    "ok": true,
-   "note": "clamped by 3 lid columns"
+   "note": ""
+  },
+  {
+   "group": "board",
+   "name": "board to lid, smallest gap (nothing in the lid presses on the board)",
+   "value": 0.8,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "rev 2: the board is held by its 3 screws only"
   },
   {
    "group": "board",
@@ -138,30 +147,12 @@
   },
   {
    "group": "board",
-   "name": "H1: lid column bottom - board top",
-   "value": 0.0,
-   "limit": 0.0,
-   "op": "==",
-   "ok": true,
-   "note": "column clamps the board"
-  },
-  {
-   "group": "board",
    "name": "H2: base boss top - board bottom",
    "value": 0.0,
    "limit": 0.0,
    "op": "==",
    "ok": true,
    "note": "board sits on the boss"
-  },
-  {
-   "group": "board",
-   "name": "H2: lid column bottom - board top",
-   "value": 0.0,
-   "limit": 0.0,
-   "op": "==",
-   "ok": true,
-   "note": "column clamps the board"
   },
   {
    "group": "board",
@@ -174,16 +165,7 @@
   },
   {
    "group": "board",
-   "name": "H3: lid column bottom - board top",
-   "value": 0.0,
-   "limit": 0.0,
-   "op": "==",
-   "ok": true,
-   "note": "column clamps the board"
-  },
-  {
-   "group": "board",
-   "name": "column / boss contact diameter vs 6.6 mm keep-out ring",
+   "name": "boss contact diameter vs 6.6 mm keep-out ring (self-tapping build)",
    "value": 6.4,
    "limit": 6.6,
    "op": "<=",
@@ -192,21 +174,39 @@
   },
   {
    "group": "board",
-   "name": "lid rim to wall top (seam), nominal",
-   "value": 0.2,
+   "name": "lid plate on the left wall top (lid underside - wall top)",
+   "value": 0.0,
    "limit": 0.0,
-   "op": ">=",
+   "op": "==",
    "ok": true,
-   "note": "lid rides on the columns, board always clamped"
+   "note": "rev 2: lid sits on the walls"
   },
   {
    "group": "board",
-   "name": "seam with a 1.76 mm board (+10 %)",
-   "value": 0.04,
+   "name": "lid plate on the right wall top (lid underside - wall top)",
+   "value": 0.0,
    "limit": 0.0,
-   "op": ">=",
+   "op": "==",
    "ok": true,
-   "note": "JLCPCB 1.6 mm +/-10 %"
+   "note": "rev 2: lid sits on the walls"
+  },
+  {
+   "group": "board",
+   "name": "lid plate on the front wall top (lid underside - wall top)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "rev 2: lid sits on the walls"
+  },
+  {
+   "group": "board",
+   "name": "lid plate on the back wall top (lid underside - wall top)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "rev 2: lid sits on the walls"
   },
   {
    "group": "walls",
@@ -283,7 +283,7 @@
   {
    "group": "antenna",
    "name": "antenna to nearest M3 screw (metal)",
-   "value": 34.91,
+   "value": 33.611,
    "limit": 5.0,
    "op": ">=",
    "ok": true,
@@ -292,7 +292,7 @@
   {
    "group": "antenna",
    "name": "antenna to nearest M3 screw, recommended",
-   "value": 34.91,
+   "value": 33.611,
    "limit": 15.0,
    "op": ">=",
    "ok": true,
@@ -300,7 +300,7 @@
   },
   {
    "group": "antenna",
-   "name": "antenna to nearest boss / column (also heat-set insert spot)",
+   "name": "antenna to nearest boss (also heat-set insert spot)",
    "value": 31.951,
    "limit": 5.0,
    "op": ">=",
@@ -337,7 +337,7 @@
   {
    "group": "parts",
    "name": "C1 C_1206 (top 1.80 above board): 3D gap to lid",
-   "value": 12.9,
+   "value": 11.566,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -364,7 +364,7 @@
   {
    "group": "parts",
    "name": "C10 C_0805 (top 1.45 above board): 3D gap to lid",
-   "value": 5.865,
+   "value": 5.93,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -490,7 +490,7 @@
   {
    "group": "parts",
    "name": "C14 C_0805 (top 1.45 above board): 3D gap to lid",
-   "value": 11.505,
+   "value": 5.563,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -544,7 +544,7 @@
   {
    "group": "parts",
    "name": "C3 C_0805 (top 1.45 above board): 3D gap to lid",
-   "value": 10.489,
+   "value": 8.177,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -760,7 +760,7 @@
   {
    "group": "parts",
    "name": "D1 D_SMA (top 2.60 above board): 3D gap to lid",
-   "value": 10.407,
+   "value": 5.35,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -832,7 +832,7 @@
   {
    "group": "parts",
    "name": "D3 LED_1206 (top 1.20 above board): 3D gap to lid",
-   "value": 1.65,
+   "value": 2.15,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -895,7 +895,7 @@
   {
    "group": "parts",
    "name": "F1 Fuse_1206 (top 1.30 above board): 3D gap to lid",
-   "value": 5.259,
+   "value": 6.162,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -949,7 +949,7 @@
   {
    "group": "parts",
    "name": "Q2 SOT-23 (top 1.20 above board): 3D gap to lid",
-   "value": 12.418,
+   "value": 13.5,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1066,7 +1066,7 @@
   {
    "group": "parts",
    "name": "R12 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 8.442,
+   "value": 8.164,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1093,7 +1093,7 @@
   {
    "group": "parts",
    "name": "R13 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 13.079,
+   "value": 8.164,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1120,7 +1120,7 @@
   {
    "group": "parts",
    "name": "R14 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 4.351,
+   "value": 4.588,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1156,7 +1156,7 @@
   {
    "group": "parts",
    "name": "R15 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 1.825,
+   "value": 2.334,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1219,7 +1219,7 @@
   {
    "group": "parts",
    "name": "R2 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 6.324,
+   "value": 4.099,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1255,7 +1255,7 @@
   {
    "group": "parts",
    "name": "R3 R_0805 (top 0.60 above board): 3D gap to lid",
-   "value": 1.75,
+   "value": 2.334,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1453,7 +1453,7 @@
   {
    "group": "parts",
    "name": "U1 TSOT-23-6 (top 1.10 above board): 3D gap to lid",
-   "value": 11.763,
+   "value": 8.033,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1579,7 +1579,7 @@
   {
    "group": "parts",
    "name": "U4 module (top 3.25 above board): 3D gap to lid",
-   "value": 7.438,
+   "value": 7.526,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1624,7 +1624,7 @@
   {
    "group": "parts",
    "name": "SW1 switch_body (top 3.50 above board): 3D gap to lid",
-   "value": 1.8,
+   "value": 2.1,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1651,7 +1651,7 @@
   {
    "group": "parts",
    "name": "SW1 switch_body (top 3.50 above board): vertical gap to lid above",
-   "value": 1.8,
+   "value": 2.1,
    "limit": 1.0,
    "op": ">=",
    "ok": true,
@@ -1705,7 +1705,7 @@
   {
    "group": "parts",
    "name": "SW1 switch_actuator (top 4.30 above board): 3D gap to lid",
-   "value": 1.0,
+   "value": 1.3,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1732,14 +1732,14 @@
   {
    "group": "parts",
    "name": "SW1 switch_actuator (top 4.30 above board): vertical gap to lid feature above",
-   "value": 1.0,
+   "value": 1.3,
    "limit": [
-    0.8,
+    1.2,
     3.0
    ],
    "op": "in",
    "ok": true,
-   "note": "RESET guide tube"
+   "note": "RESET guide tube, nominal"
   },
   {
    "group": "parts",
@@ -1753,7 +1753,7 @@
   {
    "group": "parts",
    "name": "SW2 switch_body (top 3.50 above board): 3D gap to lid",
-   "value": 0.866,
+   "value": 1.4,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1780,7 +1780,7 @@
   {
    "group": "parts",
    "name": "SW2 switch_body (top 3.50 above board): vertical gap to lid above",
-   "value": 1.1,
+   "value": 1.4,
    "limit": 1.0,
    "op": ">=",
    "ok": true,
@@ -1798,7 +1798,7 @@
   {
    "group": "parts",
    "name": "SW2 switch_legs (top 1.00 above board): 3D gap to lid",
-   "value": 0.9,
+   "value": 1.975,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1834,7 +1834,7 @@
   {
    "group": "parts",
    "name": "SW2 switch_actuator (top 4.30 above board): 3D gap to lid",
-   "value": 0.3,
+   "value": 0.6,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -1861,14 +1861,14 @@
   {
    "group": "parts",
    "name": "SW2 switch_actuator (top 4.30 above board): vertical gap to lid feature above",
-   "value": 0.3,
+   "value": 0.6,
    "limit": [
-    0.2,
-    0.5
+    0.5,
+    0.7
    ],
    "op": "in",
    "ok": true,
-   "note": "BOOT stem, by design 0.30"
+   "note": "BOOT stem, nominal (tolerance stack below)"
   },
   {
    "group": "parts",
@@ -2026,7 +2026,7 @@
   {
    "group": "parts",
    "name": "J5 header_body (top 2.54 above board): 3D gap to lid",
-   "value": 9.656,
+   "value": 5.833,
    "limit": 0.25,
    "op": ">=",
    "ok": true,
@@ -2502,6 +2502,15 @@
   },
   {
    "group": "J1 cable",
+   "name": "wire run top to lid underside, PCB 1.76 + boss worst case",
+   "value": 0.24,
+   "limit": 0.2,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "J1 cable",
    "name": "zip-tie tunnel width (strap <= 3.6 mm)",
    "value": 3.6,
    "limit": 3.6,
@@ -2538,33 +2547,171 @@
   },
   {
    "group": "buttons",
-   "name": "BOOT stem to actuator top",
-   "value": 0.3,
+   "name": "BOOT stem to actuator top, nominal",
+   "value": 0.6,
    "limit": [
-    0.2,
-    0.5
+    0.5,
+    0.7
    ],
    "op": "in",
    "ok": true,
-   "note": "0.25 mm switch travel"
+   "note": "lid on the wall top, PCB 1.60"
   },
   {
    "group": "buttons",
-   "name": "BOOT tongue strain at the hinge, 0.75 mm stroke (%)",
-   "value": 1.557,
-   "limit": 2.5,
+   "name": "BOOT stem gap, PCB 1.76 + boss/lid/switch worst case (lid never holds BOOT)",
+   "value": 0.14,
+   "limit": 0.05,
+   "op": ">=",
+   "ok": true,
+   "note": "stack +/-0.46: PCB 0.16, boss 0.1, lid 0.1, switch 0.1"
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT stem gap, PCB 1.44 + worst case (largest gap)",
+   "value": 1.06,
+   "limit": 1.2,
    "op": "<=",
    "ok": true,
-   "note": "cantilever 8.5 mm x 1.0 mm PETG, yield ~4 %"
+   "note": ""
   },
   {
    "group": "buttons",
-   "name": "RESET guide tube bottom to SW1 actuator top",
-   "value": 1.0,
+   "name": "BOOT full press at the largest gap: stroke 1.46 mm, tongue strain (%)",
+   "value": 1.788,
+   "limit": 2.0,
+   "op": "<=",
+   "ok": true,
+   "note": "hinge to stem 10.5 mm, tongue 0.9 mm, travel 0.25 + 0.15 overtravel"
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT press at nominal: stroke 1.00 mm, strain (%)",
+   "value": 1.224,
+   "limit": 2.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "buttons",
+   "name": "RESET guide tube to SW1 actuator, nominal",
+   "value": 1.3,
+   "limit": [
+    1.2,
+    1.5
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "poke with a paper clip"
+  },
+  {
+   "group": "buttons",
+   "name": "RESET tube gap, PCB 1.76 + worst case",
+   "value": 0.84,
    "limit": 0.8,
    "op": ">=",
    "ok": true,
-   "note": "poke with a paper clip"
+   "note": "tube never presses RESET"
+  },
+  {
+   "group": "buttons",
+   "name": "RESET tube gap, PCB 1.44 + worst case",
+   "value": 1.76,
+   "limit": 2.5,
+   "op": "<=",
+   "ok": true,
+   "note": "a paper clip still reaches"
+  },
+  {
+   "group": "BME280",
+   "name": "baffle bottom above board, PCB 1.76 + worst case",
+   "value": 0.44,
+   "limit": 0.2,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle A to breakout (front side)",
+   "value": 0.65,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle B to breakout (left side)",
+   "value": 0.65,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle A wall left beside the H3 head relief",
+   "value": 0.75,
+   "limit": 0.6,
+   "op": ">=",
+   "ok": true,
+   "note": "relief cut into the baffle back"
+  },
+  {
+   "group": "BME280",
+   "name": "baffle to J3 header (side)",
+   "value": 0.75,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle bottom above board",
+   "value": 0.8,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "baffle over the milled slots"
+  },
+  {
+   "group": "BME280",
+   "name": "base rib top below board",
+   "value": 0.4,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "rib under the slots"
+  },
+  {
+   "group": "BME280",
+   "name": "vent area over the breakout, lid (mm2)",
+   "value": 80.453,
+   "limit": 50,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "vent area beside the breakout, walls (mm2)",
+   "value": 218.7,
+   "limit": 100,
+   "op": ">=",
+   "ok": true,
+   "note": "right + front walls, also under the board"
+  },
+  {
+   "group": "LEDs",
+   "name": "light tube to LED top, PCB 1.76 + worst case",
+   "value": 2.14,
+   "limit": 1.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
   },
   {
    "group": "LEDs",
@@ -2640,17 +2787,17 @@
   },
   {
    "group": "screws",
-   "name": "M3 x 20 thread engagement in the base boss",
-   "value": 5.7,
-   "limit": 5.0,
+   "name": "M3 x 6 pan head: thread engagement in the base boss",
+   "value": 4.4,
+   "limit": 4.0,
    "op": ">=",
    "ok": true,
-   "note": "self-tapping in 2.5 mm pilot"
+   "note": "self-tapping in the 2.5 mm pilot"
   },
   {
    "group": "screws",
-   "name": "M3 x 20 tip above pilot hole bottom",
-   "value": 0.3,
+   "name": "M3 x 6 pan head: tip above the pilot hole bottom",
+   "value": 1.6,
    "limit": 0.2,
    "op": ">=",
    "ok": true,
@@ -2658,75 +2805,312 @@
   },
   {
    "group": "screws",
-   "name": "M3 x 20 tip above the mounting face",
-   "value": 1.3,
-   "limit": 1.0,
+   "name": "M3 x 6 pan head: tip above the mounting face",
+   "value": 2.6,
+   "limit": 1.3,
    "op": ">=",
    "ok": true,
-   "note": "flat back stays closed"
+   "note": "back stays closed"
   },
   {
    "group": "screws",
-   "name": "pan head (2.4 mm) recessed below the lid top",
-   "value": 1.6,
-   "limit": 0.5,
-   "op": ">=",
+   "name": "next standard length (M3 x 8): tip above the mounting face",
+   "value": 0.6,
+   "limit": 1.3,
+   "op": "<=",
+   "ok": true,
+   "note": "M3 x 8 would break through, so M3 x 6 is the longest that fits"
+  },
+  {
+   "group": "screws",
+   "name": "pan head inside the 6.6 mm keep-out ring",
+   "value": 5.6,
+   "limit": 6.6,
+   "op": "<=",
    "ok": true,
    "note": ""
   },
   {
-   "group": "BME280",
-   "name": "baffle to breakout (side)",
-   "value": 0.65,
-   "limit": 0.5,
+   "group": "screws",
+   "name": "screw heads (5.6 x 2.4) to any lid feature",
+   "value": 1.046,
+   "limit": 1.0,
    "op": ">=",
    "ok": true,
-   "note": ""
+   "note": "no clamp columns any more; baffle relieved"
   },
   {
-   "group": "BME280",
-   "name": "baffle to J3 header (side)",
-   "value": 0.75,
-   "limit": 0.5,
+   "group": "screws",
+   "name": "screw heads to the nearest component envelope",
+   "value": 1.265,
+   "limit": 0.3,
    "op": ">=",
    "ok": true,
-   "note": ""
+   "note": "screwdriver and head clear the parts"
   },
   {
-   "group": "BME280",
-   "name": "baffle bottom above board",
+   "group": "screws",
+   "name": "insert variant: M3 insert hole bottom above the mounting face",
+   "value": 2.0,
+   "limit": 1.5,
+   "op": ">=",
+   "ok": true,
+   "note": "hole 4.0 x 5.0 mm for inserts up to 4.0 mm long"
+  },
+  {
+   "group": "screws",
+   "name": "insert variant: M3 x 6 tip above the insert hole bottom",
    "value": 0.6,
    "limit": 0.3,
    "op": ">=",
    "ok": true,
-   "note": "baffle over the milled slots"
+   "note": ""
   },
   {
-   "group": "BME280",
-   "name": "base rib top below board",
-   "value": 0.4,
-   "limit": 0.3,
+   "group": "screws",
+   "name": "insert variant: boss wall around the insert hole",
+   "value": 1.7,
+   "limit": 1.5,
    "op": ">=",
    "ok": true,
-   "note": "rib under the slots"
+   "note": "boss grows to 7.4 mm (plastic past the copper keep-out ring is harmless)"
   },
   {
-   "group": "BME280",
-   "name": "vent area over the breakout, lid (mm2)",
-   "value": 80.453,
-   "limit": 50,
+   "group": "screws",
+   "name": "insert variant: thread length in the insert",
+   "value": 4.0,
+   "limit": 3.0,
    "op": ">=",
    "ok": true,
    "note": ""
   },
   {
-   "group": "BME280",
-   "name": "vent area beside the breakout, walls (mm2)",
-   "value": 218.7,
-   "limit": 100,
+   "group": "latches",
+   "name": "arm L 9.19 (plate to hook top) x t 1.3 x w 7.0 mm, deflection 0.80 mm: peak strain (%)",
+   "value": 1.845,
+   "limit": 2.0,
+   "op": "<=",
+   "ok": true,
+   "note": "eps = 1.5 t d / L^2, PETG"
+  },
+  {
+   "group": "latches",
+   "name": "catch face angle from vertical in the lid print orientation (deg)",
+   "value": 45.0,
+   "limit": 45.0,
+   "op": "<=",
+   "ok": true,
+   "note": "45 deg overhang, no support"
+  },
+  {
+   "group": "latches",
+   "name": "lead-in ramp angle from vertical (deg)",
+   "value": 30.0,
+   "limit": 30.0,
+   "op": "<=",
+   "ok": true,
+   "note": "+ 0.6 mm chamfer on the wall top"
+  },
+  {
+   "group": "latches",
+   "name": "preload (arm stays deflected when latched), nominal",
+   "value": 0.3,
+   "limit": [
+    0.2,
+    0.4
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "45 deg catch pulls the lid down"
+  },
+  {
+   "group": "latches",
+   "name": "preload, worst case (no rattle)",
+   "value": 0.1,
+   "limit": 0.05,
    "op": ">=",
    "ok": true,
-   "note": "right + front walls, also under the board"
+   "note": "window +/-0.1, hook +/-0.1"
+  },
+  {
+   "group": "latches",
+   "name": "hook engagement in the window, nominal",
+   "value": 0.5,
+   "limit": 0.4,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "hook engagement, worst case",
+   "value": 0.3,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "pull-off force per latch (k 8.3 N/mm, mu 0.3) (N)",
+   "value": 12.346,
+   "limit": 8.0,
+   "op": ">=",
+   "ok": true,
+   "note": "estimate; release with a screwdriver through the window"
+  },
+  {
+   "group": "latches",
+   "name": "click-on force per latch (N)",
+   "value": 7.054,
+   "limit": 15.0,
+   "op": "<=",
+   "ok": true,
+   "note": "estimate"
+  },
+  {
+   "group": "latches",
+   "name": "window bridge span (base print)",
+   "value": 7.8,
+   "limit": 10.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "window bottom below the hook inside the wall",
+   "value": 0.42,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "hook tip recess behind the outer wall face (screwdriver release)",
+   "value": 1.5,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": "push the tip in 0.50 mm to release"
+  },
+  {
+   "group": "latches",
+   "name": "back latch: measured preload (inward shift that frees the hook)",
+   "value": 0.298,
+   "limit": [
+    0.27,
+    0.33
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "interference 0.32 mm3 when the lid is on"
+  },
+  {
+   "group": "latches",
+   "name": "back latch arm + hook to board / parts / screw heads, at rest",
+   "value": 2.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "back latch arm + hook to board / parts, deflected 0.8 mm (closest: board)",
+   "value": 2.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "back latch window to the nearest opening / vent / ear / bump (plan)",
+   "value": 5.36,
+   "limit": 2.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "front latch: measured preload (inward shift that frees the hook)",
+   "value": 0.298,
+   "limit": [
+    0.27,
+    0.33
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "interference 0.31 mm3 when the lid is on"
+  },
+  {
+   "group": "latches",
+   "name": "front latch arm + hook to board / parts / screw heads, at rest",
+   "value": 2.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "front latch arm + hook to board / parts, deflected 0.8 mm (closest: board)",
+   "value": 2.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "front latch window to the nearest opening / vent / ear / bump (plan)",
+   "value": 17.166,
+   "limit": 2.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "right latch: measured preload (inward shift that frees the hook)",
+   "value": 0.298,
+   "limit": [
+    0.27,
+    0.33
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "interference 0.31 mm3 when the lid is on"
+  },
+  {
+   "group": "latches",
+   "name": "right latch arm + hook to board / parts / screw heads, at rest",
+   "value": 1.975,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "right latch arm + hook to board / parts, deflected 0.8 mm (closest: SW2 switch_legs)",
+   "value": 1.384,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "latches",
+   "name": "right latch window to the nearest opening / vent / ear / bump (plan)",
+   "value": 4.276,
+   "limit": 2.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
   },
   {
    "group": "print",
@@ -2744,7 +3128,7 @@
    "limit": 0.0,
    "op": "==",
    "ok": true,
-   "note": "print size 114.0 x 69.5 x 23.1 mm"
+   "note": "print size 114.0 x 69.5 x 23.3 mm"
   },
   {
    "group": "print",
@@ -2762,7 +3146,7 @@
    "limit": 0.0,
    "op": "==",
    "ok": true,
-   "note": "print size 80.0 x 69.5 x 16.7 mm"
+   "note": "print size 80.0 x 69.5 x 15.9 mm"
   },
   {
    "group": "print",
@@ -2800,13 +3184,15 @@
    "J1 plug top -> lid underside  4.90 mm",
    "wires (1.9 OD, r 2.5) -> lid   0.50 mm",
    "window 13 x 4.0 mm, ribbon 11.9 x 1.9",
-   "BOOT stem -> SW2 actuator  0.30 mm",
-   "RESET tube -> SW1 actuator  1.00 mm"
+   "BOOT stem -> SW2 actuator  0.60 mm (min 0.14)",
+   "RESET tube -> SW1 actuator  1.30 mm (min 0.84)",
+   "board screws M3 x 6: 4.4 mm in the boss, tip 2.6 above the back",
+   "right latch: preload 0.30, engagement 0.50, strain 1.85 %"
   ],
   "B": [
    "antenna end -> nearest case plastic  5.00 mm (air)",
-   "antenna -> nearest screw   34.9 mm",
-   "baffle -> breakout 0.65 mm, -> J3 0.75 mm",
+   "antenna -> nearest screw   33.6 mm",
+   "baffles -> breakout 0.65 / 0.65 mm, -> J3 0.75 mm",
    "BME vents: lid 80 mm2, walls 219 mm2"
   ]
  },
@@ -2824,39 +3210,39 @@
    "kind": "module",
    "h": 3.25,
    "up": 11.449999237060547,
-   "gap_lid": 7.438078336909949,
+   "gap_lid": 7.52628793055255,
    "gap_base": 3.355964838909969
   },
   {
    "ref": "SW1",
    "kind": "switch_body",
    "h": 3.5,
-   "up": 1.7999996185302738,
-   "gap_lid": 1.7999996185302738,
+   "up": 2.099999809265137,
+   "gap_lid": 2.099999809265137,
    "gap_base": 6.599999999999999
   },
   {
    "ref": "SW1",
    "kind": "switch_actuator",
    "h": 4.300000000000001,
-   "up": 0.9999996185302731,
-   "gap_lid": 0.9999996185302731,
+   "up": 1.2999998092651364,
+   "gap_lid": 1.2999998092651364,
    "gap_base": 6.6
   },
   {
    "ref": "SW2",
    "kind": "switch_body",
    "h": 3.5,
-   "up": 1.099999809265137,
-   "gap_lid": 0.866319424709793,
+   "up": 1.4000000000000004,
+   "gap_lid": 1.4000000000000004,
    "gap_base": 1.8194805153201024
   },
   {
    "ref": "SW2",
    "kind": "switch_actuator",
    "h": 4.300000000000001,
-   "up": 0.29999980926513636,
-   "gap_lid": 0.29999980926513636,
+   "up": 0.5999999999999996,
+   "gap_lid": 0.5999999999999996,
    "gap_base": 2.9785974750021174
   },
   {
@@ -2904,7 +3290,7 @@
    "kind": "bme_breakout",
    "h": 6.0,
    "up": 5.699999237060547,
-   "gap_lid": 0.6499999999999986,
+   "gap_lid": 0.6499996185302734,
    "gap_base": 1.4500000000000028
   },
   {

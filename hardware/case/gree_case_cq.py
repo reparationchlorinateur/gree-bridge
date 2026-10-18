@@ -3,7 +3,8 @@
 Gree bridge rev B case - CadQuery twin of gree_case.scad, for STEP output (Fusion 360).
 
 Reads out/params.json + out/board_parts.json (written by layout_gree.py) and builds the same
-base / lid / cap as gree_case.scad, feature for feature, in the assembled frame:
+base / lid / cap as gree_case.scad (rev 2: snap-fit lid, board screwed to the base), feature for
+feature, in the assembled frame:
     out/step/gree_base.step, gree_lid.step, gree_cap.step   (assembled position, mm)
     out/step/gree_case_assembly.step                         (case + board + component placeholders, coloured)
     out/check/cq_{base,lid,cap}.stl                          (for the OpenSCAD <-> CadQuery cross-check)
@@ -133,6 +134,7 @@ def base():
     cuts += [ear_cuts(g("ear_left"), -1), ear_cuts(g("ear_right"), 1)]
     tt, t = g("tie_tunnel"), g("tie")
     cuts.append(box(tt[0], t[1] - 1, tt[2], tt[1], t[3] + 1, tt[3]))
+    cuts += [latch_window(l) for l in g("latches")]
     # name on the outside of the front wall (0.5 deep)
     ft_ = cq.Workplane("XZ").text("GREE BRIDGE rev B", 2.8 * FONT_K, -0.5, fontPath=FONT, halign="center", valign="center", combine=False)
     cuts.append(ft_.translate((24, -EPS, 4.6)))
@@ -159,6 +161,32 @@ def profile_pts(a0, a1, z0, r, ztop, n=16):
     return pts
 
 
+# ------------------------------------------------------------------ snap latches
+def latch_solid(l, poly_vz, u0, u1):
+    """polygon in the latch's local (v, z) frame (v outward from the arm's outer face), extruded over u0..u1"""
+    kind, c, nw, d = l
+    n0 = nw - d * g("fit")
+    pts = [(n0 + d * v, z) for v, z in poly_vz]
+    if kind == 0:
+        return prism_yz(pts, c + u0, c + u1)      # back / front wall: (y, z) along X
+    return prism_xz(pts, c + u0, c + u1)          # right wall: (x, z) along Y
+
+def latch_arm(l):
+    z_ab, z_c, _ = g("latch_z")
+    w, t, h, f = g("latch_w"), g("latch_t"), g("latch_hook"), g("latch_flat")
+    arm = latch_solid(l, [(-t, z_ab), (0, z_ab), (0, g("z_li") + EPS), (-t, g("z_li") + EPS)], -w / 2, w / 2)
+    hook = latch_solid(l, [(-0.2, z_ab), (0, z_ab), (h, z_c - f), (h, z_c), (0, z_c + h), (-0.2, z_c + h)], -w / 2, w / 2)
+    return arm.union(hook)
+
+def latch_window(l):
+    fit, wall, zw, c = g("fit"), g("wall"), g("z_wall"), g("latch_leadin")
+    ww = g("latch_w") + 2 * g("latch_win_side")
+    z0, z1 = g("latch_win_z")
+    win = latch_solid(l, [(-0.5, z0), (fit + wall + 0.5, z0), (fit + wall + 0.5, z1), (-0.5, z1)], -ww / 2, ww / 2)
+    lead = latch_solid(l, [(fit - 0.5, zw - c - 0.5), (fit + c + 1, zw + 1), (fit - 0.5, zw + 1)], -ww / 2 - 1, ww / 2 + 1)
+    return win.union(lead)
+
+
 # ------------------------------------------------------------------ lid
 def lid():
     zli, ztop, zpt = g("z_li"), g("z_top"), g("z_pt")
@@ -167,8 +195,6 @@ def lid():
     lip = cavity(zli - lip_h, zli + EPS, fit).cut(cavity(zli - lip_h - 1, zli + 1, fit + lip_t))
     lip = lip.cut(U(*[box(c[0], c[1], zli - lip_h - 1, c[2], c[3], zli) for c in g("lip_cut")]))
     feats = [lip]
-    for (hx, hy) in g("holes"):
-        feats += [cyl(hx, hy, zpt, zli - g("col_boss_h") + EPS, g("col_d")), cyl(hx, hy, zli - g("col_boss_h"), zli + EPS, g("col_boss_d"))]
     for k in ("baffleA", "baffleB"):
         r = g(k); feats.append(box(r[0], r[1], g("z_baffle"), r[2], r[3], zli + EPS))
     for (lx, ly) in g("led"):
@@ -176,17 +202,16 @@ def lid():
     rx, ry = g("rst")
     feats.append(cyl(rx, ry, g("z_rst_tube"), zli + EPS, g("rst_tube_od")))
     inner = U(*feats).intersect(cavity(zpt - 1, zli + EPS, fit))
-    s = plate.union(inner)
+    inner = inner.cut(U(*[cyl(hx, hy, zpt - 1, g("z_head_relief"), g("head_relief_d")) for (hx, hy) in g("holes")]))
+    s = U(plate, inner, *[latch_arm(l) for l in g("latches")])
 
     cuts = []
-    for (hx, hy) in g("holes"):
-        cuts += [cyl(hx, hy, zpt - 1, ztop + 1, g("screw_clear")), cyl(hx, hy, ztop - g("cbore_depth"), ztop + 1, g("cbore_d"))]
     for (lx, ly) in g("led"):
         cuts.append(cyl(lx, ly, g("z_led_tube") - 1, (ztop - g("led_skin")) if g("led_skin") > 0 else ztop + 1, g("led_hole_d")))
     cuts.append(cyl(rx, ry, g("z_rst_tube") - 1, ztop + 1, g("rst_hole_d")))
-    bx0, bx1 = g("boot_x"); by0, by1 = g("boot_y"); sl = g("boot_slot")
-    cuts += [box(bx0, by1, zli - EPS, bx1 + sl, by1 + sl, ztop + 1), box(bx0, by0 - sl, zli - EPS, bx1 + sl, by0, ztop + 1),
-             box(bx1, by0 - sl, zli - EPS, bx1 + sl, by1 + sl, ztop + 1), box(bx0, by0, zli - EPS, bx1, by1, ztop - g("boot_t"))]
+    cuts += [box(r[0], r[1], zli - EPS, r[2], r[3], ztop + 1) for r in g("boot_slots")]
+    tg = g("boot_tongue")
+    cuts.append(box(tg[0], tg[1], zli - EPS, tg[2], tg[3], ztop - g("boot_t")))
     cuts.append(cyl(g("boot")[0], g("boot")[1], ztop - 0.3, ztop + 1, 3.2))
     jo = g("j5_open")
     cuts.append(rrbox(jo, 0.8, zli - 1, ztop + 1))
@@ -251,6 +276,9 @@ def main():
     assy.add(parts["lid"], name="lid", color=cq.Color(0.70, 0.75, 0.76, 0.6))
     assy.add(parts["cap"], name="j5_cap", color=cq.Color(0.39, 0.43, 0.45))
     assy.add(board(), name="pcb", color=cq.Color(0.11, 0.42, 0.23))
+    for i, (sx, sy, ztip, zhead) in enumerate(g("screws")):
+        sc = cyl(sx, sy, ztip, g("z_pt"), 3.0).union(cyl(sx, sy, g("z_pt"), zhead, g("head_d")))
+        assy.add(sc, name=f"M3x{g('screw_len'):g}_H{i + 1}", color=cq.Color(0.6, 0.62, 0.65))
     seen = {}
     for p in B["parts"]:
         if p["kind"] in ("xhp_plug_optional", "dupont_1x6"):      # fit-check only (J3 cable if fitted, programming plug)

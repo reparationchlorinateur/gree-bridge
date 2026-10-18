@@ -29,21 +29,28 @@ D = dict(
     ant_air=5.0,            # air from the module antenna end / sides to the inner wall
     under_gap=5.0,          # floor top to board bottom (THT tails, untrimmed U5 pins 4.4)
     lid_air=14.7,           # board top to lid inner surface (J1 plug 9.8 + bent wires, 1.9 mm OD worst case)
-    seam=0.2,               # lid rides on its 3 columns (board clamped); rim floats this much over the wall top
+    seam=0.0,               # rev 2: the lid sits on the wall top (snap latches hold it down)
     lip_t=1.6, lip_h=3.0,
     r_out=3.0, r_bump=2.0, r_in=1.0,
     cham_bot=0.6, cham_top=0.8,
-    # screws: 3 x M3 x 20 pan head from the lid, through lid column + board, into the base boss
-    screw_clear=3.4, pilot_d=2.5, pilot_bottom=1.0,
-    use_inserts=False, insert_d=4.0, insert_depth=5.5,
-    cbore_d=6.2, cbore_depth=4.0,
-    col_d=6.4, col_boss_d=8.4, col_boss_h=4.0,
+    # board screws (rev 2): 3 x M3 x 6 pan head from above through the board into the base bosses
+    screw_len=6.0, head_d=5.6, head_h=2.4, pilot_d=2.5, pilot_bottom=1.0,
+    use_inserts=False, insert_d=4.0, insert_depth=5.0, insert_len=4.0, boss_d_insert=7.4,
+    head_relief=1.05,       # lid features keep this much air around the screw heads (1.0 + facet margin)
     boss_d=6.4, boss_flare_d=9.0, boss_flare_h=2.0,
     # light holes / buttons
     led_hole_d=2.4, led_tube_od=4.0, led_tube_gap=2.5, led_skin=0.0,
-    rst_hole_d=2.2, rst_tube_od=4.6, rst_tube_gap=1.0,
-    boot_w=5.0, boot_t=1.0, boot_slot=0.8, boot_hinge_kx=159.0, boot_tip_kx=170.8,
-    stem_d=3.0, stem_gap=0.3,
+    rst_hole_d=2.2, rst_tube_od=4.6, rst_tube_gap=1.3,
+    # BOOT flexure (rev 2): tongue hinged toward the front, 10.5 mm hinge-to-stem, 0.9 mm thick
+    boot_w=5.0, boot_t=0.9, boot_slot=0.8, boot_arm=10.5, boot_tip_over=2.8,
+    stem_d=3.0, stem_gap=0.6,
+    # tolerance stack for BOOT / RESET / baffles (lid on the wall top, board on the bosses)
+    tol_pcb=0.16, tol_base=0.1, tol_lid=0.1, tol_switch=0.1, sw_travel=0.25, sw_overtravel=0.15,
+    # snap latches (rev 2): cantilever arms on the lid lip, hooks click into windows in the base walls
+    latch_w=7.0, latch_t=1.3, latch_slit=0.8, latch_hook=1.1, latch_flat=0.4, latch_preload=0.3,
+    latch_arm_bot=10.7, latch_win_side=0.4, latch_leadin=0.6,
+    # (wall, centre along the wall in KiCad mm): back wall at x 119.5, front wall at x 119.5, right wall at y 128
+    latch_pos=(("back", 119.5), ("front", 119.5), ("right", 128.0)),
     # J5 programming opening + snap cap
     j5_open=(4.6, 17.8), j5_recess=1.0, j5_recess_d=1.0, cap_plug_fit=0.15, cap_wall=0.8,
     cap_plug_below=1.6, cap_bump=0.45,
@@ -58,7 +65,7 @@ D = dict(
     ear_len=17.0, ear_w=14.0, ear_t=3.0, ear_hole=4.3, ear_slot=(2.0, 5.2), ear_gusset=1.5,
     ear_left_ky=146.0, ear_right_ky=108.0,
     # BME280 baffles
-    baffle_t=1.0, baffle_gap=0.6, rib_gap=0.4,
+    baffle_t=1.0, baffle_gap=0.8, rib_gap=0.4,
     # text
     label="GREE BRIDGE", label_size=4.6, label_depth=0.8, legend_size=2.8, legend_depth=0.6,
 )
@@ -163,9 +170,17 @@ def main():
     P["rst"] = [X(sw1[0]), Y(sw1[1])]
     P["z_rst_tube"] = z_pt + H["SW_act"] + D["rst_tube_gap"]
     P["boot"] = [X(sw2[0]), Y(sw2[1])]
-    P["boot_x"] = [X(D["boot_hinge_kx"]), X(D["boot_tip_kx"])]
-    P["boot_y"] = [Y(sw2[1]) - D["boot_w"] / 2, Y(sw2[1]) + D["boot_w"] / 2]
+    # BOOT tongue: hinge toward the front (-Y), free end just past the stem; U slot around it
+    tx0, tx1 = X(sw2[0]) - D["boot_w"] / 2, X(sw2[0]) + D["boot_w"] / 2
+    ty_h, ty_t = Y(sw2[1]) - D["boot_arm"], Y(sw2[1]) + D["boot_tip_over"]
+    sl = D["boot_slot"]
+    P["boot_tongue"] = [tx0, ty_h, tx1, ty_t]
+    P["boot_slots"] = [[tx0 - sl, ty_h, tx0, ty_t + sl], [tx1, ty_h, tx1 + sl, ty_t + sl], [tx0 - sl, ty_t, tx1 + sl, ty_t + sl]]
     P["z_stem"] = z_pt + H["SW_act"] + D["stem_gap"]
+    P["boss_d"] = D["boss_d_insert"] if D["use_inserts"] else D["boss_d"]
+    P["screws"] = [[X(holes[r][0]), Y(holes[r][1]), z_pt - D["screw_len"], z_pt + D["head_h"]] for r in ("H1", "H2", "H3")]
+    P["z_head_relief"] = z_pt + D["head_h"] + D["head_relief"]
+    P["head_relief_d"] = D["head_d"] + 2 * D["head_relief"]
     j5c = (sum(p[0] for p in j5_pins) / 6, (j5_pins[0][1] + j5_pins[-1][1]) / 2)
     ow, ol = D["j5_open"]
     P["j5_open"] = [X(j5c[0]) - ow / 2, Y(j5c[1]) - ol / 2, X(j5c[0]) + ow / 2, Y(j5c[1]) + ol / 2]
@@ -177,10 +192,10 @@ def main():
     P["slotA"] = rectK(*sA_bb); P["slotB"] = rectK(*sB_bb)
     yA = (sA_bb[1] + sA_bb[3]) / 2           # 140.0
     xB = (sB_bb[0] + sB_bb[2]) / 2           # 157.8
-    # baffle A: along y = 140 (between H3 column / D3 and the breakout), from baffle B to the right wall
-    P["baffleA"] = [X(157.0), Y(140.2), main_i[2], Y(139.1)]
+    # baffle A: over slot A (y 139.5..140.5, between the H3 screw head and the breakout), baffle B to the right wall
+    P["baffleA"] = [X(157.0), Y(140.6), main_i[2], Y(139.6)]
     # baffle B: between J3 (x <= 156.2) and the breakout (x >= 158.7), from baffle A to the front wall
-    P["baffleB"] = [X(157.0), main_i[1], X(158.0), Y(139.1)]
+    P["baffleB"] = [X(157.0), main_i[1], X(158.0), Y(139.6)]
     P["z_baffle"] = z_pt + D["baffle_gap"]
     P["ribA"] = [X(sA_bb[0] - 6.2), Y(sA_bb[3]), main_i[2], Y(sA_bb[1])]
     P["ribB"] = [X(sB_bb[0]), main_i[1], X(sB_bb[2]), Y(yA)]
@@ -199,12 +214,39 @@ def main():
     j3xc = (j3_pins[0][0] + j3_pins[-1][0]) / 2
     P["ko"] = [X(j3xc) - D["j3_ko_w"] / 2, X(j3xc) + D["j3_ko_w"] / 2, z_li - D["win_h"], z_li]
 
-    # lid lip interruptions (J1 window, J3 knock-out up to baffle B, J5 opening)
+    # snap latches: [kind, c, n_wall, dir]  kind 0 = back/front wall (arm along X), 1 = right wall (arm along Y)
+    #   c = arm centre along the wall, n_wall = inner wall face coordinate, dir = +1 / -1 outward
+    lw, lt, lh, lf = D["latch_w"], D["latch_t"], D["latch_hook"], D["latch_flat"]
+    z_ab = D["latch_arm_bot"]
+    z_c = z_ab + lf + lh * math.tan(math.radians(60))       # lower edge of the 45 deg catch face (hook tip, top)
+    z_w = z_c + lh - D["fit"] - D["latch_preload"]           # window ceiling: touches the catch face at the preload
+    P["latch_z"] = [z_ab, z_c, z_w]                          # arm bottom, catch-face low edge, window ceiling
+    P["latch_win_z"] = [z_ab + 0.1, z_w]
+    L = []
+    for wall, ck in D["latch_pos"]:
+        if wall == "back":
+            L.append([0, X(ck), main_i[3], 1])
+        elif wall == "front":
+            L.append([0, X(ck), main_i[1], -1])
+        elif wall == "right":
+            L.append([1, Y(ck), main_i[2], 1])
+        else:
+            raise ValueError(wall)
+    P["latches"] = L
+    # lid lip interruptions (J1 window, J3 knock-out up to baffle B, J5 opening, latch arms + slits)
     P["lip_cut"] = [
         [-1.0, P["win"][0] - 2.0, 4.5, P["win"][1] + 2.0],
         [P["ko"][0] - 2.0, -1.0, P["baffleB"][0], 4.5],
         [P["j5_open"][0] - 2.1, P["j5_open"][1] - 3.6, main_o[2] + 1, main_i[3] + 1.0],
     ]
+    for kind, c, nw, dr in L:
+        a0, a1 = c - lw / 2 - D["latch_slit"], c + lw / 2 + D["latch_slit"]
+        n0, n1 = sorted([nw + dr * 1.0, nw - dr * (D["fit"] + D["lip_t"] + 1.0)])
+        P["lip_cut"].append([a0, n0, a1, n1] if kind == 0 else [n0, a0, n1, a1])
+        if kind == 1:   # do not leave a lip sliver between the right latch and the J5 cut
+            j5c_ = P["lip_cut"][2]
+            if a1 < j5c_[1] < a1 + 1.0:
+                j5c_[1] = a1
 
     # vents
     vw = D["vent_w"]; vb = D["vent_w_bme"]
@@ -238,7 +280,7 @@ def main():
         ["PWR", X(d4[0]), Y(d4[1]) - 4.1, ls, 0, "center"],
         ["LINK", X(d3[0]) - 2.7, Y(d3[1]), ls, 0, "right"],
         ["RST", X(sw1[0]) - 2.2, Y(sw1[1]), ls, 0, "right"],
-        ["BOOT", X(sw2[0]) - 2.5, Y(sw2[1]) + 5.2, ls, 0, "center"],
+        ["BOOT", X(sw2[0]), Y(sw2[1]) + D["boot_tip_over"] + D["boot_slot"] + 2.1, ls, 0, "center"],
         ["PROG", X(j5c[0]) - ow / 2 - D["j5_recess"] - 2.6, Y(j5c[1]) - 1.5, ls, 90, "center"],
         ["1", X(j5c[0]) - ow / 2 - D["j5_recess"] - 2.6, Y(j5_pins[0][1]) + 0.2, 2.4, 0, "center"],
         ["I2C", X(j3xc) + 2.5, 3.8, 2.5, 0, "center"],
@@ -341,6 +383,7 @@ def main():
           f"({main_o[2]-main_o[0]:g} x {bump_o[3]-main_o[1]:g} x {z_top:g} mm, ears +{2*D['ear_len']:g} in X)")
     print(f"z: floor top {D['floor_t']}, board {z_pb:g}..{z_pt:g}, wall top {z_wall:g}, lid inner {z_li:g}, top {z_top:g}")
     print(f"{len(parts)} envelopes, {len(tht)} THT pads -> gree_case_params.scad, out/params.json, out/board_parts.json")
+    print(f"latches {P['latches']}, z arm bottom / catch / window ceiling {[round(v, 3) for v in P['latch_z']]}")
 
 
 if __name__ == "__main__":

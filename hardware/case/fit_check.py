@@ -111,7 +111,6 @@ def main():
     for n, t in (("base", base_t), ("lid", lid_t), ("cap", cap_t)):
         row("mesh", f"{n}: watertight single body", float(t.is_watertight and len(t.split(only_watertight=False)) == 1), 1, "==",
             f"{t.volume / 1000:.1f} cm3, ~{t.volume / 1000 * 1.27:.0f} g PETG solid-equivalent")
-    row("mesh", "base x lid overlap (mm3)", vol(base ^ lid), 0.01, "<=", "assembled, must not intersect")
     row("mesh", "lid x cap overlap (mm3)", vol(lid ^ cap), 0.01, "<=", "cap snapped in")
     row("mesh", "base x cap overlap (mm3)", vol(base ^ cap), 0.01, "<=")
 
@@ -143,18 +142,18 @@ def main():
                                                 [list(map(tuple, h.coords[:-1])) for h in bpoly.interiors], m3d.FillRule.EvenOdd),
                                bd["z1"] - bd["z0"]).translate((0, 0, bd["z0"]))
     row("board", "board x base overlap (mm3)", vol(pcb ^ base), 0.01, "<=", "rests on 3 bosses + 2 rest ribs")
-    row("board", "board x lid overlap (mm3)", vol(pcb ^ lid), 0.01, "<=", "clamped by 3 lid columns")
+    row("board", "board x lid overlap (mm3)", vol(pcb ^ lid), 0.01, "<=")
+    row("board", "board to lid, smallest gap (nothing in the lid presses on the board)", gap(pcb, lid), 0.3, ">=",
+        "rev 2: the board is held by its 3 screws only")
     for i, (hx, hy) in enumerate(bd["holes"]):
-        reg = mcyl(hx, hy, 0, ztop + 1, 7.0)
-        bz = (base ^ reg).bounding_box()[5]
-        lz = (lid ^ reg).bounding_box()[2]
+        bz = (base ^ mcyl(hx, hy, 0, ztop + 1, 7.0)).bounding_box()[5]
         row("board", f"H{i + 1}: base boss top - board bottom", bz - zpb, 0.0, "==", "board sits on the boss")
-        row("board", f"H{i + 1}: lid column bottom - board top", lz - zpt, 0.0, "==", "column clamps the board")
-    row("board", "column / boss contact diameter vs 6.6 mm keep-out ring", max(P["col_d"], P["boss_d"]), 2 * bd["keepout_r"], "<=",
+    row("board", "boss contact diameter vs 6.6 mm keep-out ring (self-tapping build)", P["boss_d"], 2 * bd["keepout_r"], "<=",
         "H*_SCREW_HEAD rule areas, r 3.3")
-    seam = zli - zwall
-    row("board", "lid rim to wall top (seam), nominal", seam, 0.0, ">=", "lid rides on the columns, board always clamped")
-    row("board", "seam with a 1.76 mm board (+10 %)", seam - 0.16, 0.0, ">=", "JLCPCB 1.6 mm +/-10 %")
+    for nm, bx in (("left", [0, 8, 0, 2, 11, 30]), ("right", [78, 36, 0, 80, 40, 30]), ("front", [8, 0, 0, 14, 2, 30]),
+                   ("back", [36, 57, 0, 42, 59, 30])):
+        zb_ = (base ^ mbox(bx)).bounding_box()[5]; zl_ = (lid ^ mbox(bx)).bounding_box()[2]
+        row("board", f"lid plate on the {nm} wall top (lid underside - wall top)", zl_ - zb_, 0.0, "==", "rev 2: lid sits on the walls")
 
     # wall clearance at mid-board height
     sec = section(base, (zpb + zpt) / 2)
@@ -175,14 +174,12 @@ def main():
     g_ant = min(gap(am, base), gap(am, lid), gap(am, cap))
     row("antenna", "antenna end (6 mm overhang) to any case plastic", g_ant, 5.0, ">=", "air only within 5 mm")
     row("antenna", "antenna to base", gap(am, base), 5.0, ">="); row("antenna", "antenna to lid", gap(am, lid), 5.0, ">=")
-    tip_z = ztop - P["cbore_depth"] - 20.0
-    screws = [mcyl(hx, hy, tip_z, ztop - P["cbore_depth"], 3.0) + mcyl(hx, hy, ztop - P["cbore_depth"], ztop - P["cbore_depth"] + 2.4, 5.6)
-              for (hx, hy) in P["holes"]]
+    screws = [mcyl(sx, sy, zt, zpt, 3.0) + mcyl(sx, sy, zpt, zh, P["head_d"]) for (sx, sy, zt, zh) in P["screws"]]
+    heads = [mcyl(sx, sy, zpt, zh, P["head_d"]) for (sx, sy, zt, zh) in P["screws"]]
     row("antenna", "antenna to nearest M3 screw (metal)", min(gap(am, s, 80) for s in screws), 5.0, ">=", "Espressif: keep metal >= 15 mm")
     row("antenna", "antenna to nearest M3 screw, recommended", min(gap(am, s, 80) for s in screws), 15.0, ">=")
-    bosses = [mcyl(hx, hy, P["floor_t"], zpb, P["boss_flare_d"]) for (hx, hy) in P["holes"]] + \
-             [mcyl(hx, hy, zpt, zli, P["col_boss_d"]) for (hx, hy) in P["holes"]]
-    row("antenna", "antenna to nearest boss / column (also heat-set insert spot)", min(gap(am, s, 80) for s in bosses), 5.0, ">=")
+    bosses = [mcyl(hx, hy, P["floor_t"], zpb, max(P["boss_flare_d"], P["boss_d_insert"])) for (hx, hy) in P["holes"]]
+    row("antenna", "antenna to nearest boss (also heat-set insert spot)", min(gap(am, s, 80) for s in bosses), 5.0, ">=")
     ears = []
     for e, side in ((P["ear_left"], -1), (P["ear_right"], 1)):
         wx = P["main_o"][0] if side < 0 else P["main_o"][2]
@@ -194,8 +191,8 @@ def main():
                    f"antenna -> nearest screw  {min(gap(am, s, 80) for s in screws):5.1f} mm"]
 
     # ---------------------------------------------------------------- components (top side) and envelopes
-    special_up = {("SW2", "switch_actuator"): ((0.2, 0.5), "BOOT stem, by design %.2f" % P["stem_gap"]),
-                  ("SW1", "switch_actuator"): ((0.8, 3.0), "RESET guide tube")}
+    special_up = {("SW2", "switch_actuator"): ((0.5, 0.7), "BOOT stem, nominal (tolerance stack below)"),
+                  ("SW1", "switch_actuator"): ((1.2, 3.0), "RESET guide tube, nominal")}
     tall = []
     for p in B["parts"]:
         b = p["box"]
@@ -254,6 +251,7 @@ def main():
     row("J1 cable", "window bottom below wire run", run[2] - w[2], 0.3, ">=")
     row("J1 cable", "wire run top to lid underside", w[3] - run[5], 0.3, ">=", f"bend r {wr} mm, worst-case OD {wo} mm")
     row("J1 cable", "J1 mated plug top to lid underside", zli - j1[5], 3.0, ">=", "room for the wires to turn")
+    row("J1 cable", "wire run top to lid underside, PCB 1.76 + boss worst case", w[3] - run[5] - P["tol_pcb"] - P["tol_base"], 0.2, ">=")
     tt = P["tie_tunnel"]
     row("J1 cable", "zip-tie tunnel width (strap <= 3.6 mm)", tt[1] - tt[0], 3.6, ">=", f"height {tt[3] - tt[2]:.1f} mm")
     annot["A"] += [f"J1 plug top -> lid underside {zli - j1[5]:5.2f} mm",
@@ -270,18 +268,30 @@ def main():
     row("buttons", "BOOT stem centre to SW2 actuator centre (xy)", math.dist(P["boot"], sw2[:2]), 0.1, "<=")
     row("buttons", "BOOT stem diameter vs 3.5 mm actuator", P["stem_d"], 3.5, "<=")
     stem_gap = P["z_stem"] - sw2[2]
-    defl = stem_gap + 0.25 + 0.2
-    a_len = P["boot"][0] - P["boot_x"][0]
-    strain = 1.5 * P["boot_t"] * defl / a_len ** 2 * 100
-    row("buttons", "BOOT stem to actuator top", stem_gap, (0.2, 0.5), "in", "0.25 mm switch travel")
-    row("buttons", f"BOOT tongue strain at the hinge, {defl:.2f} mm stroke (%)", strain, 2.5, "<=",
-        f"cantilever {a_len:.1f} mm x {P['boot_t']} mm PETG, yield ~4 %")
-    row("buttons", "RESET guide tube bottom to SW1 actuator top", P["z_rst_tube"] - sw1[2], 0.8, ">=", "poke with a paper clip")
+    rst_gap = P["z_rst_tube"] - sw1[2]
+    a_len = P["boot"][1] - P["boot_tongue"][1]                # hinge (front) to stem
+    t_stack = P["tol_pcb"] + P["tol_base"] + P["tol_lid"] + P["tol_switch"]
+    t_pr = P["tol_pcb"] + P["tol_base"] + P["tol_lid"]
+    stroke = lambda gp: gp + P["sw_travel"] + P["sw_overtravel"]
+    strain = lambda d: 1.5 * P["boot_t"] * d / a_len ** 2 * 100
+    row("buttons", "BOOT stem to actuator top, nominal", stem_gap, (0.5, 0.7), "in", "lid on the wall top, PCB 1.60")
+    row("buttons", "BOOT stem gap, PCB 1.76 + boss/lid/switch worst case (lid never holds BOOT)", stem_gap - t_stack, 0.05, ">=",
+        f"stack +/-{t_stack:.2f}: PCB {P['tol_pcb']}, boss {P['tol_base']}, lid {P['tol_lid']}, switch {P['tol_switch']}")
+    row("buttons", "BOOT stem gap, PCB 1.44 + worst case (largest gap)", stem_gap + t_stack, 1.2, "<=")
+    row("buttons", f"BOOT full press at the largest gap: stroke {stroke(stem_gap + t_stack):.2f} mm, tongue strain (%)",
+        strain(stroke(stem_gap + t_stack)), 2.0, "<=",
+        f"hinge to stem {a_len:.1f} mm, tongue {P['boot_t']} mm, travel {P['sw_travel']} + {P['sw_overtravel']} overtravel")
+    row("buttons", f"BOOT press at nominal: stroke {stroke(stem_gap):.2f} mm, strain (%)", strain(stroke(stem_gap)), 2.0, "<=")
+    row("buttons", "RESET guide tube to SW1 actuator, nominal", rst_gap, (1.2, 1.5), "in", "poke with a paper clip")
+    row("buttons", "RESET tube gap, PCB 1.76 + worst case", rst_gap - t_stack, 0.8, ">=", "tube never presses RESET")
+    row("buttons", "RESET tube gap, PCB 1.44 + worst case", rst_gap + t_stack, 2.5, "<=", "a paper clip still reaches")
+    row("BME280", "baffle bottom above board, PCB 1.76 + worst case", P["z_baffle"] - zpt - t_pr, 0.2, ">=")
+    row("LEDs", "light tube to LED top, PCB 1.76 + worst case", P["z_led_tube"] - d4[2] - t_pr, 1.5, ">=")
     row("LEDs", "D4 (red PWR) light hole centre offset", math.dist(P["led"][0], d4[:2]), 0.1, "<=")
     row("LEDs", "D3 (green LINK) light hole centre offset", math.dist(P["led"][1], d3[:2]), 0.1, "<=")
     row("LEDs", "light tube bottom to LED top", P["z_led_tube"] - d4[2], 1.5, ">=", "tubes stop light bleeding between LEDs")
-    annot["A"] += [f"BOOT stem -> SW2 actuator {stem_gap:5.2f} mm",
-                   f"RESET tube -> SW1 actuator {P['z_rst_tube'] - sw1[2]:5.2f} mm"]
+    annot["A"] += [f"BOOT stem -> SW2 actuator {stem_gap:5.2f} mm (min {stem_gap - t_stack:4.2f})",
+                   f"RESET tube -> SW1 actuator {rst_gap:5.2f} mm (min {rst_gap - t_stack:4.2f})"]
 
     # ---------------------------------------------------------------- fits (sections)
     s_l = section(lid, zli - 1.5); s_b = section(base, zli - 1.5)
@@ -295,17 +305,111 @@ def main():
     row("fits", "J5 cap snap overlap under the plate (per side)", -snap, 0.2, ">=", "bumps flex the 0.8 mm plug walls")
 
     # ---------------------------------------------------------------- screws
-    eng = zpb - tip_z
-    row("screws", "M3 x 20 thread engagement in the base boss", eng, 5.0, ">=", "self-tapping in 2.5 mm pilot")
-    row("screws", "M3 x 20 tip above pilot hole bottom", tip_z - (P["pilot_bottom"] if not P["use_inserts"] else zpb - P["insert_depth"]), 0.2, ">=")
-    row("screws", "M3 x 20 tip above the mounting face", tip_z, 1.0, ">=", "flat back stays closed")
-    row("screws", "pan head (2.4 mm) recessed below the lid top", P["cbore_depth"] - 2.4, 0.5, ">=")
+    L_s = P["screw_len"]; tip_z = P["screws"][0][2]
+    nm = f"M3 x {L_s:g} pan head"
+    row("screws", f"{nm}: thread engagement in the base boss", zpb - tip_z, 4.0, ">=", "self-tapping in the 2.5 mm pilot")
+    row("screws", f"{nm}: tip above the pilot hole bottom", tip_z - P["pilot_bottom"], 0.2, ">=")
+    row("screws", f"{nm}: tip above the mounting face", tip_z, 1.3, ">=", "back stays closed")
+    row("screws", "next standard length (M3 x 8): tip above the mounting face", zpt - 8.0, 1.3, "<=",
+        "M3 x 8 would break through, so M3 x 6 is the longest that fits")
+    row("screws", "pan head inside the 6.6 mm keep-out ring", P["head_d"], 2 * bd["keepout_r"], "<=")
+    g_hl = min(gap(h, lid) for h in heads)
+    row("screws", "screw heads (5.6 x 2.4) to any lid feature", g_hl, 1.0, ">=", "no clamp columns any more; baffle relieved")
+    top_parts = [mbox(p["box"]) for p in B["parts"] if p["box"][5] > zpb + 1e-6]
+    g_hp = min(gap(h, q, 10) for h in heads for q in top_parts)
+    row("screws", "screw heads to the nearest component envelope", g_hp, 0.3, ">=", "screwdriver and head clear the parts")
+    # heat-set insert variant (use_inserts = True): checked from the parameters
+    ins_bot = zpb - P["insert_depth"]
+    row("screws", "insert variant: M3 insert hole bottom above the mounting face", ins_bot, 1.5, ">=",
+        f"hole {P['insert_d']} x {P['insert_depth']} mm for inserts up to {P['insert_len']} mm long")
+    row("screws", "insert variant: M3 x 6 tip above the insert hole bottom", tip_z - ins_bot, 0.3, ">=")
+    row("screws", "insert variant: boss wall around the insert hole", (P["boss_d_insert"] - P["insert_d"]) / 2, 1.5, ">=",
+        f"boss grows to {P['boss_d_insert']} mm (plastic past the copper keep-out ring is harmless)")
+    row("screws", "insert variant: thread length in the insert", min(P["insert_len"], zpb - tip_z), 3.0, ">=")
+    annot["A"] += [f"board screws M3 x {L_s:g}: {zpb - tip_z:.1f} mm in the boss, tip {tip_z:.1f} above the back"]
+
+    # ---------------------------------------------------------------- snap latches
+    fit, wall_t = P["fit"], P["wall"]
+    lw, lt, lh, lf, pre = P["latch_w"], P["latch_t"], P["latch_hook"], P["latch_flat"], P["latch_preload"]
+    z_ab, z_c, z_wc = P["latch_z"]
+    L_arm = zli - (z_c + lh)                                  # root (plate underside) to the top of the hook
+    d_max = lh - fit                                          # deflection to pass the wall's inner face
+    eps_l = 1.5 * lt * d_max / L_arm ** 2 * 100
+    E = 2000.0; mu = 0.3; phi = math.atan(mu)
+    L_eff = zli - (z_c + lh / 2)
+    k = E * lw * lt ** 3 / (4 * L_eff ** 3)
+    row("latches", f"arm L {L_arm:.2f} (plate to hook top) x t {lt} x w {lw} mm, deflection {d_max:.2f} mm: peak strain (%)",
+        eps_l, 2.0, "<=", "eps = 1.5 t d / L^2, PETG")
+    row("latches", "catch face angle from vertical in the lid print orientation (deg)", 45.0, 45.0, "<=", "45 deg overhang, no support")
+    row("latches", "lead-in ramp angle from vertical (deg)", 30.0, 30.0, "<=", f"+ {P['latch_leadin']} mm chamfer on the wall top")
+    t_l = P["tol_base"] + P["tol_lid"]
+    row("latches", "preload (arm stays deflected when latched), nominal", pre, (0.2, 0.4), "in", "45 deg catch pulls the lid down")
+    row("latches", "preload, worst case (no rattle)", pre - t_l, 0.05, ">=", f"window +/-{P['tol_base']}, hook +/-{P['tol_lid']}")
+    row("latches", "hook engagement in the window, nominal", lh - fit - pre, 0.4, ">=")
+    row("latches", "hook engagement, worst case", lh - fit - pre - t_l, 0.25, ">=")
+    row("latches", f"pull-off force per latch (k {k:.1f} N/mm, mu {mu}) (N)", k * d_max * math.tan(math.radians(45) + phi), 8.0, ">=",
+        "estimate; release with a screwdriver through the window")
+    row("latches", "click-on force per latch (N)", k * d_max * math.tan(math.radians(30) + phi), 15.0, "<=", "estimate")
+    row("latches", "window bridge span (base print)", lw + 2 * P["latch_win_side"], 10.0, "<=")
+    z_ramp = z_ab + fit / lh * (z_c - lf - z_ab)
+    row("latches", "window bottom below the hook inside the wall", z_ramp - P["latch_win_z"][0], 0.3, ">=")
+    row("latches", "hook tip recess behind the outer wall face (screwdriver release)", fit + wall_t - (lh - pre), 1.0, ">=",
+        f"push the tip in {lh - pre - fit:.2f} mm to release")
+    comp = [(p["ref"] + " " + p["kind"], mbox(p["box"])) for p in B["parts"] if p["box"][5] > zpb + 1e-6]
+    comp += [(f"H{i + 1} screw head", h) for i, h in enumerate(heads)] + [("board", pcb)]
+    names = {(0, 1): "back", (0, -1): "front", (1, 1): "right", (1, -1): "left"}
+    total_ov = vol(base ^ lid)
+    zone_ov = 0.0
+    for l in P["latches"]:
+        kind, c, nw, d = l
+        n0 = nw - d * fit
+        def wbox(u0, u1, v0, v1, z0, z1, sh=0.0):
+            a0, a1 = c + u0, c + u1
+            n_a, n_b = sorted([n0 + d * (v0 - sh), n0 + d * (v1 - sh)])
+            return [a0, n_a, z0, a1, n_b, z1] if kind == 0 else [n_a, a0, z0, n_b, a1, z1]
+        nm_l = names[(kind, d)]
+        zone = mbox(wbox(-lw / 2 - 0.05, lw / 2 + 0.05, -lt - 0.05, lh + 0.05, z_ab - 0.05, zli - 0.05))
+        arm = lid ^ zone
+        ov = vol(base ^ arm); zone_ov += ov
+        shift = lambda s_: arm.translate((0, -d * s_, 0) if kind == 0 else (-d * s_, 0, 0))
+        lo, hi = 0.0, 1.5
+        for _ in range(18):
+            mid = (lo + hi) / 2
+            if vol(base ^ shift(mid)) > 1e-5:
+                lo = mid
+            else:
+                hi = mid
+        row("latches", f"{nm_l} latch: measured preload (inward shift that frees the hook)", hi, (pre - 0.03, pre + 0.03), "in",
+            f"interference {ov:.2f} mm3 when the lid is on")
+        g_free = min(gap(arm, q, 10) for _, q in comp)
+        armd = shift(d_max)
+        gd = [(gap(armd, q, 10), n_) for n_, q in comp]
+        g_def, who = min(gd)
+        row("latches", f"{nm_l} latch arm + hook to board / parts / screw heads, at rest", g_free, 1.0, ">=")
+        row("latches", f"{nm_l} latch arm + hook to board / parts, deflected {d_max:.1f} mm (closest: {who})", g_def, 1.0, ">=")
+        # placement in plan: distance to the other openings, vents, ears and the antenna bump
+        ww = lw / 2 + P["latch_win_side"]
+        wb = wbox(-ww, ww, fit, fit + wall_t, 0, 1)
+        win_r = sbox(wb[0], wb[1], wb[3], wb[4])
+        others = [sbox(P["main_o"][0] - 6, P["win"][0], 2.5, P["win"][1]), sbox(P["ko"][0], 0, P["ko"][1], 2.5),
+                  sbox(*P["j5_open"]), sbox(*P["ear_left"]), sbox(*P["ear_right"]), sbox(*P["bump_o"])]
+        others += [sbox(78, y - 0.75, 80, y + 0.75) for y in P["vent_right"]] + [sbox(x - 0.75, 0, x + 0.75, 2) for x in P["vent_front"]]
+        others += [sbox(0, y - 0.8, 2, y + 0.8) for y in P["vent_left"]] + [sbox(x - 0.8, P["bump_i"][3], x + 0.8, P["bump_o"][3]) for x in P["vent_back"]]
+        others += [sbox(v[0] - 0.8, min(v[1], v[3]) - 0.8, v[2] + 0.8, max(v[1], v[3]) + 0.8) for v in P["vent_lid"] + P["vent_lid_bme"]]
+        row("latches", f"{nm_l} latch window to the nearest opening / vent / ear / bump (plan)", min(win_r.distance(o) for o in others), 2.0, ">=")
+        if nm_l == "right":
+            annot["A"] += [f"right latch: preload {hi:.2f}, engagement {lh - fit - pre:.2f}, strain {eps_l:.2f} %"]
+    row("mesh", "base x lid overlap outside the latch hooks (mm3)", total_ov - zone_ov, 0.01, "<=", "only the hooks touch, by design")
 
     # ---------------------------------------------------------------- BME280 compartment
     u5 = [p for p in B["parts"] if p["kind"] == "bme_breakout"][0]["box"]
     j3 = [p for p in B["parts"] if p["kind"] == "xh_header" and p["ref"] == "J3"][0]["box"]
     bA, bB = P["baffleA"], P["baffleB"]
-    row("BME280", "baffle to breakout (side)", min(u5[0] - bB[2], u5[1] - bA[3]) if u5[1] > bA[3] else u5[0] - bB[2], 0.5, ">=")
+    row("BME280", "baffle A to breakout (front side)", bA[1] - u5[4], 0.5, ">=")
+    row("BME280", "baffle B to breakout (left side)", u5[0] - bB[2], 0.5, ">=")
+    rel = min(math.dist((sx, sy), ((bA[0] + bA[2]) / 2, bA[1])) for (sx, sy, _, _) in P["screws"])
+    hx_, hy_ = P["screws"][2][0], P["screws"][2][1]
+    row("BME280", "baffle A wall left beside the H3 head relief", (hy_ - P["head_relief_d"] / 2) - bA[1], 0.6, ">=", "relief cut into the baffle back")
     row("BME280", "baffle to J3 header (side)", bB[0] - j3[3], 0.5, ">=")
     row("BME280", "baffle bottom above board", P["z_baffle"] - zpt, 0.3, ">=", "baffle over the milled slots")
     row("BME280", "base rib top below board", zpb - P["z_rib"], 0.3, ">=", "rib under the slots")
@@ -314,7 +418,7 @@ def main():
     wall_area = (len(P["vent_right"]) + len(P["vent_front"])) * P["vent_w_bme"] * (P["z_vent_bme"][1] - P["z_vent_bme"][0])
     row("BME280", "vent area over the breakout, lid (mm2)", lid_area, 50, ">=")
     row("BME280", "vent area beside the breakout, walls (mm2)", wall_area, 100, ">=", "right + front walls, also under the board")
-    annot["B"] += [f"baffle -> breakout {u5[0] - bB[2]:4.2f} mm, -> J3 {bB[0] - j3[3]:4.2f} mm",
+    annot["B"] += [f"baffles -> breakout {bA[1] - u5[4]:4.2f} / {u5[0] - bB[2]:4.2f} mm, -> J3 {bB[0] - j3[3]:4.2f} mm",
                    f"BME vents: lid {lid_area:.0f} mm2, walls {wall_area:.0f} mm2"]
 
     # ---------------------------------------------------------------- printability (print orientation)
@@ -348,6 +452,11 @@ def main():
              f"case body {dims['body'][0]:.1f} x {dims['body'][1]:.2f} x {dims['body'][2]:.1f} mm "
              f"(X x Y x Z), {dims['with_ears'][0]:.1f} mm across the ears",
              f"board at z {zpb:.2f}..{zpt:.2f}, lid inner surface z {zli:.2f}, wall top z {zwall:.2f}, lid top z {ztop:.2f}", ""]
+    order = []
+    for r in rows:
+        if r["group"] not in order:
+            order.append(r["group"])
+    rows.sort(key=lambda r: order.index(r["group"]))         # stable: keeps the row order inside each group
     grp = None
     for r in rows:
         if r["group"] != grp:

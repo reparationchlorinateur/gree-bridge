@@ -1,16 +1,18 @@
 // ============================================================================
-//  Gree bridge rev B case, 2026-10-17
+//  Gree bridge rev B case, rev 2 (2026-10-18): snap-fit lid, board screwed to the base
 //  Board: gree_bridge.kicad_pcb rev B (75 x 54 mm, ESP32-S3-WROOM-1 antenna 6 mm over the back edge)
 //  Inside the Gree GWH12KF indoor unit, powered from its 12 V logic supply through J1.
 //
 //  Printed parts (PETG, no supports):
 //    BASE  tray, floor down. Board on 3 bosses (5 mm under it), J1 cable window + zip-tie block
 //          (left wall), J3 knock-out (front wall), BME280 vents, 2 ears (screw + zip-tie slots)
-//    LID   plate + 3 mm locating lip, printed top face down. 3 columns clamp the board at H1-H3,
-//          BOOT flexure key, RESET pin hole, 2 light tubes, BME280 baffle, J5 opening, label
+//    LID   plate + 3 mm locating lip, printed top face down, clean top. 3 snap latches (arms on the
+//          lip, hooks click into windows in the base walls), BOOT flexure key, RESET pin hole,
+//          2 light tubes, BME280 baffle, J5 opening, label
 //    CAP   snap cap for the J5 opening, flange down
-//  Closing: 3 x M3 x 20 pan head from the lid top, through the lid columns and the board's
-//  M3 holes into the base bosses (self-tapping into 2.5 mm pilots, or M3 heat-set inserts).
+//  Board: 3 x M3 x 6 pan head from above through H1-H3 into the base bosses (self-tapping into
+//  2.5 mm pilots, or M3 heat-set inserts with use_inserts). Then the lid clicks on; it sits on the
+//  wall top. To open: push each hook in through its wall window with a small screwdriver and lift.
 //
 //  Frame (gree_case_params.scad): X = kicad_x - X0, Y = Y0 - kicad_y, Z = 0 at the mounting face.
 //  part = "base" | "lid" | "cap"            print orientation (STL)
@@ -46,6 +48,28 @@ module slot2d(p, w) hull() { translate([p[0], p[1]]) circle(d = w); translate([p
 module outer(z0, z1, cb, ct) union() { cbox(main_o, r_out, z0, z1, cb, ct); cbox(bump_o, r_bump, z0, z1, cb, ct); }
 module cavity2d(d = 0) { rr2d(grow(main_i, -d), r_in - d); rr2d(grow(bump_i, -d), r_in - d); }
 module cavity(z0, z1, d = 0) translate([0, 0, z0]) linear_extrude(z1 - z0) cavity2d(d);
+
+/* ---------------- snap latches ----------------
+   latch l = [kind, c, n_wall, dir]: kind 0 = back / front wall (arm along X), 1 = right wall (arm along Y),
+   c = centre along the wall, n_wall = inner wall face, dir = +1 / -1 outward.
+   Local frame: u along the wall, v outward from the arm's outer face (v = fit at the wall inner face), z up. */
+module latch_place(l) {
+    n0 = l[2] - l[3] * fit;
+    if (l[0] == 0) multmatrix([[1, 0, 0, l[1]], [0, l[3], 0, n0], [0, 0, 1, 0], [0, 0, 0, 1]]) children();
+    else multmatrix([[0, l[3], 0, n0], [1, 0, 0, l[1]], [0, 0, 1, 0], [0, 0, 0, 1]]) children();
+}
+module along_u(len) translate([-len / 2, 0, 0]) rotate([90, 0, 90]) linear_extrude(len) children();   // 2D (v, z) -> extruded along u
+z_ab = latch_z[0];  z_c = latch_z[1];  z_wc = latch_z[2];
+module latch_arm() {       // lid side: arm + hook (45 deg catch face on top, 30 deg lead-in ramp below)
+    translate([-latch_w / 2, -latch_t, z_ab]) cube([latch_w, latch_t, z_li - z_ab + eps]);
+    along_u(latch_w) polygon([[-0.2, z_ab], [0, z_ab], [latch_hook, z_c - latch_flat], [latch_hook, z_c],
+                              [0, z_c + latch_hook], [-0.2, z_c + latch_hook]]);
+}
+module latch_window() {    // base side: window through the wall (ceiling = catch edge) + lead-in chamfer on the wall top
+    ww = latch_w + 2 * latch_win_side;
+    translate([-ww / 2, -0.5, latch_win_z[0]]) cube([ww, fit + wall + 1, latch_win_z[1] - latch_win_z[0]]);
+    along_u(ww + 2) polygon([[fit - 0.5, z_wall - latch_leadin - 0.5], [fit - 0.5, z_wall + 1], [fit + latch_leadin + 1, z_wall + 1]]);
+}
 
 /* ================================ BASE ================================ */
 module ear2d(e, side) {     // side -1: left ear (wall at e[2] - 1), +1: right ear (wall at e[0] + 1)
@@ -118,6 +142,7 @@ module base() {
         base_vents();
         ear_cuts(ear_left, -1); ear_cuts(ear_right, 1);
         box(tie_tunnel[0], tie[1] - 1, tie_tunnel[2], tie_tunnel[1], tie[3] + 1, tie_tunnel[3]);
+        for (l = latches) latch_place(l) latch_window();
         // name on the outside of the front wall, under the J3 knock-out side
         translate([24, -eps, 4.6]) rotate([90, 0, 0]) mirror([0, 0, 1]) linear_extrude(0.5)
             text("GREE BRIDGE rev B", size = 2.8, halign = "center", valign = "center", font = font);
@@ -130,10 +155,6 @@ module lip() difference() {
     translate([0, 0, z_li - lip_h - 1]) linear_extrude(lip_h + 2) cavity2d(fit + lip_t);
     for (c = lip_cut) box(c[0], c[1], z_li - lip_h - 1, c[2], c[3], z_li);
 }
-module columns() for (h = holes) translate([h[0], h[1], 0]) {
-    translate([0, 0, z_pt]) cylinder(d = col_d, h = z_li - col_boss_h - z_pt + eps);
-    translate([0, 0, z_li - col_boss_h]) cylinder(d = col_boss_d, h = col_boss_h + eps);
-}
 module baffles() {
     box(baffleA[0], baffleA[1], z_baffle, baffleA[2], baffleA[3], z_li + eps);
     box(baffleB[0], baffleB[1], z_baffle, baffleB[2], baffleB[3], z_li + eps);
@@ -145,18 +166,11 @@ module tubes() {
 module legend(t, x, y, s, rot, ha) translate([x, y, z_top - legend_depth]) rotate(rot)
     linear_extrude(legend_depth + 1) text(t, size = s, halign = ha, valign = "center", font = font);
 module lid_cuts() {
-    for (h = holes) translate([h[0], h[1], 0]) {
-        translate([0, 0, z_pt - 1]) cylinder(d = screw_clear, h = z_top - z_pt + 2, $fn = 32);
-        translate([0, 0, z_top - cbore_depth]) cylinder(d = cbore_d, h = cbore_depth + 1);
-    }
     for (l = led) translate([l[0], l[1], z_led_tube - 1]) cylinder(d = led_hole_d, h = (led_skin > 0 ? z_top - led_skin : z_top + 1) - z_led_tube + 1, $fn = 32);
     translate([rst[0], rst[1], z_rst_tube - 1]) cylinder(d = rst_hole_d, h = z_top - z_rst_tube + 2, $fn = 32);
-    // BOOT flexure key: U slot through the plate + thinning pocket under the tongue
-    bx0 = boot_x[0]; bx1 = boot_x[1]; by0 = boot_y[0]; by1 = boot_y[1]; s = boot_slot;
-    box(bx0, by1, z_li - eps, bx1 + s, by1 + s, z_top + 1);
-    box(bx0, by0 - s, z_li - eps, bx1 + s, by0, z_top + 1);
-    box(bx1, by0 - s, z_li - eps, bx1 + s, by1 + s, z_top + 1);
-    box(bx0, by0, z_li - eps, bx1, by1, z_top - boot_t);
+    // BOOT flexure key: U slot through the plate + thinning pocket under the tongue (hinge toward the front)
+    for (r = boot_slots) box(r[0], r[1], z_li - eps, r[2], r[3], z_top + 1);
+    box(boot_tongue[0], boot_tongue[1], z_li - eps, boot_tongue[2], boot_tongue[3], z_top - boot_t);
     translate([boot[0], boot[1], z_top - 0.3]) cylinder(d = 3.2, h = 1);
     // J5 programming opening, recess for the cap flange, nail notch
     translate([0, 0, z_li - 1]) linear_extrude(lid_t + 2) rr2d(j5_open, 0.8);
@@ -182,10 +196,15 @@ module lid() union() {
     difference() {
         union() {
             outer(z_li, z_top, 0, cham_top);
-            intersection() {
-                translate([0, 0, z_pt - 1]) linear_extrude(z_li - z_pt + 1 + eps) cavity2d(fit);
-                union() { lip(); columns(); baffles(); tubes(); }
+            difference() {
+                intersection() {
+                    translate([0, 0, z_pt - 1]) linear_extrude(z_li - z_pt + 1 + eps) cavity2d(fit);
+                    union() { lip(); baffles(); tubes(); }
+                }
+                // air around the board screw heads (pan head + head_relief)
+                for (h = holes) translate([h[0], h[1], z_pt - 1]) cylinder(d = head_relief_d, h = z_head_relief - z_pt + 1);
             }
+            for (l = latches) latch_place(l) latch_arm();
         }
         lid_cuts();
     }
@@ -221,6 +240,10 @@ module board() {
         for (h = holes) translate(h) circle(d = 3.2);
     }
     for (p = parts) color(pcol(p[1])) box(p[0][0], p[0][1], p[0][2], p[0][3], p[0][4], p[0][5]);
+    for (sc = screws) color("#9aa0a6") translate([sc[0], sc[1], 0]) {      // M3 x 6 pan head
+        translate([0, 0, sc[2]]) cylinder(d = 3, h = z_pt - sc[2], $fn = 24);
+        translate([0, 0, z_pt]) cylinder(d = head_d, h = head_h, $fn = 32);
+    }
 }
 
 /* ================================ output ================================ */

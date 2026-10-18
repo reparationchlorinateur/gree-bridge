@@ -130,7 +130,7 @@ Also needed and not in the BOM: XH housings and crimps, a GY-BME280 breakout, a 
 
 ## Case
 
-A 3D-printable case is in [`hardware/case/`](../hardware/case/): 80 x 69.6 x 25.3 mm, PETG without supports, closed with 3 x M3 x 20 screws through the board's mounting holes, with a cable window for J1, a cap over J5, a BOOT key, a RESET pin hole, LED light pipes, a baffle and vents around the BME280, and 5 mm of air around the antenna. Designed and fit-checked in CAD, not printed yet.
+A 3D-printable case is in [`hardware/case/`](../hardware/case/): 80 x 69.6 x 25.3 mm, PETG without supports. The board is screwed to the base with 3 x M3 x 6 pan head screws, and the lid clicks on with 3 snap latches (a small screwdriver through each latch window opens it). It has a cable window for J1, a cap over J5, a BOOT key, a RESET pin hole, LED light pipes, a baffle and vents around the BME280, and 5 mm of air around the antenna. Designed and fit-checked in CAD, not printed yet.
 
 ![Case](../hardware/case/out/png/gree_case_assembled.png)
 
