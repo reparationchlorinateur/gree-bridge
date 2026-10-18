@@ -33,7 +33,7 @@ A small ESP32-S3 board that goes inside a **Gree mini-split indoor unit** and ma
 1. **Get a board**: order it assembled from JLCPCB with the files in [`hardware/jlcpcb/`](hardware/jlcpcb/) ([how](docs/order-jlcpcb.md)), or order bare PCBs and solder the parts in [`hardware/bom.csv`](hardware/bom.csv) ([assembly sheet](hardware/gree_bridge_revB_assembly_sheet.pdf)). Add the connectors and a GY-BME280 breakout.
 2. **Flash** [`firmware/build/gree_tasmota32s3_15.6.0.factory.bin`](firmware/build/) through the J5 header with a 3.3 V USB-serial adapter, from Chrome.
 3. **Configure**: Wi-Fi, names, the GPIO template, upload the three scripts.
-4. **Install** in the indoor unit (5-wire cable to J1), with the breaker off, ideally in the [printed case](hardware/case/).
+4. **Install** in the indoor unit (5-wire cable to J1, [where each wire goes](docs/images/gree_board_taps.jpg)), with the breaker off, ideally in the [printed case](hardware/case/).
 5. **Connect** to Home Assistant (MQTT + a generated package) and/or pair with Apple Home.
 
 Every step, with the exact console lines: **[docs/install.md](docs/install.md)**.

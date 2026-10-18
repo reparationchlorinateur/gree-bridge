@@ -38,6 +38,10 @@ Cable: XHP-5 housing and SXH-001T-P0.6 crimps. Read [SAFETY.md](../SAFETY.md) be
 
 ![J1 wiring](images/j1_wiring.png)
 
+Tap points on the Gree board: blue = RX tap (U6), green = TX tap (U3), red box = hot side, never touch (details in [protocol.md](protocol.md)).
+
+![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
+
 ### J3: I2C for more sensors (JST XH 4-pin)
 
 1 +3V3 · 2 GND · 3 SCL (GPIO9) · 4 SDA (GPIO8). The BME280 on U5 is at 0x76, so a second sensor here must use 0x77.

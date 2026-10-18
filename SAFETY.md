@@ -17,7 +17,7 @@ On the board this was developed on (GRJ819-A3), the hot side is marked with a li
 
 1. **Switch the unit off at the breaker** (not just with the remote) before opening it, and every time you plug or unplug the cable. Capacitors on the hot side can stay charged for a while after power-off.
 2. **Check the isolation yourself** with an ohmmeter, power off: the logic GND must be **open** (megohms) to **N** and to **L** of the unit's terminal block. If it is not, stop: that board's logic side is not isolated, and nothing connected to it is safe to touch.
-3. **Identify the tap points** on your own board (see [docs/protocol.md](docs/protocol.md)). With the unit running and only a voltmeter or scope on the logic side, check that each point has the expected levels before soldering a wire to it.
+3. **Identify the tap points** on your own board (see [docs/protocol.md](docs/protocol.md); on GRJ819-A3, the [photo](docs/images/gree_board_taps.jpg) shows them and the hot side). With the unit running and only a voltmeter or scope on the logic side, check that each point has the expected levels before soldering a wire to it.
 4. Use the logic ground (`GND`), **never** the hot ground (`GND/` or similar).
 
 ## While it is installed

@@ -101,6 +101,16 @@ GPIO0 = BOOT button, GPIO4 = IR in, GPIO5 = IR out, GPIO8/9 = I2C (BME280, J3), 
 
 J1-3 and J1-4 are the two bus taps, not the programming TX/RX of J5. On another board, find the equivalent points first ([protocol.md](protocol.md), "Finding the tap points").
 
+![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
+
+Where to solder the two bus taps on the GRJ819-A3 indoor board (component side, oriented as in the photo; the top row of pins of both optocouplers is the logic side):
+
+- **Blue: RX tap** → J1-3. U6 (RX opto), top-left pin, next to D16.
+- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin.
+- **Red box: hot side** (communication loop, about 56 V, mains nearby). The bottom pins of U3 and U6 are on the hot side: never solder, probe or route a wire there.
+
+Take +12 V and GND from the logic side too (points labelled `+12V` and `GND` on the back of the board), never from `GND/`.
+
 Breaker on, then check:
 - The wall remote works as before, and the console shows `IrReceived` with `"Protocol":"GREE"` at each press.
 - Within a few seconds of the unit running, the main page shows the Gree rows: room, coil, state, indoor fan, link OK, compressor, outdoor values.

@@ -19,6 +19,14 @@ On GRJ819-A3:
 - **U6 = RX opto** (LED on the hot side, transistor on the logic side). Its pin 4 (collector, logic side, top pin next to D16) is the **RX tap**: it sees both the indoor frames (echo) and the outdoor replies. It is a low-voltage node: about **0.10 V idle / 1.07 V during bits**. The bridge reads it with a transistor stage that switches at about 0.55 V and draws about 10 µA.
 - **U3 = TX opto** (mounted the other way round: LED on the logic side, driven by the MCU). The LED drive node is the **TX tap**: full logic levels, indoor frames only.
 
+![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
+
+Where to solder the two bus taps on the GRJ819-A3 indoor board (component side, oriented as in the photo; the top row of pins of both optocouplers is the logic side):
+
+- **Blue: RX tap** → J1-3. U6 (RX opto), top-left pin, next to D16.
+- **Green: TX tap** → J1-4. U3 (TX opto), top-left pin.
+- **Red box: hot side** (communication loop, about 56 V, mains nearby). The bottom pins of U3 and U6 are on the hot side: never solder, probe or route a wire there.
+
 ### Finding the tap points on another board
 
 Power off for any soldering. Then, with the unit running and **only a voltmeter or scope on the logic side** (probe ground on logic `GND`):
