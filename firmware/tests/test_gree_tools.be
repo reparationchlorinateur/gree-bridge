@@ -248,6 +248,17 @@ tasmota.cmds["IrDetect"]("IrDetect", 0, "0", nil)
 check("IrDetect 0 forgets", gree_tools.ir_det == nil && persist.find("gree_ir", 1) == nil)
 tasmota.fire("IrReceived", {"Protocol": "DAIKIN", "Bits": 280, "IRHVAC": {"Vendor": "DAIKIN", "Model": -1}})
 check("another brand is detected too", gree_tools.ir_det["vendor"] == "DAIKIN" && gree_tools.ir_text() == "DAIKIN (1 presses since restart)")
+var saves0 = persist.saves
+for m: ["YBOFB", "YAW1F", "YBOFB", "YAW1F", "YBOFB"]
+  tasmota.fire("IrReceived", {"Protocol": "GREE", "Bits": 64, "IRHVAC": {"Vendor": "GREE", "Model": m}})
+end
+print("    saves for 5 GREE presses with a flipping model:", persist.saves - saves0)
+check("model guess flipping: most frequent model shown, flash written only on change", gree_tools.ir_det["model"] == "YBOFB" &&
+      persist.saves - saves0 <= 2)
+tasmota.fire("IrReceived", {"Protocol": "UNKNOWN", "Bits": 3})
+check("noise is not counted as a press", gree_tools.ir_seen["noise"] == 1 && gree_tools.ir_last["protocol"] == "GREE")
+gree_tools.reset_ir()
+tasmota.fire("IrReceived", {"Protocol": "DAIKIN", "Bits": 280, "IRHVAC": {"Vendor": "DAIKIN", "Model": -1}})
 
 # ---------------- captures ----------------
 gree_tools.cap_file = "./tmp_capture.txt"
@@ -308,6 +319,9 @@ for k: 0 .. 9
   gree_bus.frame("TX", IND)
   NOW += 500 tasmota.second()
 end
+NOW = 409500
+tasmota.fire("IrReceived", {"Protocol": "UNKNOWN", "Bits": 3, "RawData": "+125-790+85-3150+225"})   # line noise
+check("startup: IR line noise does not start the capture", gree_tools.cap["k"] == 0)
 NOW = 410200
 tasmota.fire("IRHVAC", {"Vendor": "GREE", "Power": "On", "Mode": "Cool", "Temp": 19})   # sent from Home Assistant
 check("an IR command starts window 1", gree_tools.cap["k"] == 1)

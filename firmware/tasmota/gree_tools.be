@@ -311,7 +311,7 @@ end
 
 # ---------------------------------------------------------------------------------------------------
 class GreeTools
-  static var VERSION = "2026-10-18"
+  static var VERSION = "2026-10-18b"
   static var CAP_FILE = "/gree_capture.txt"
   static var PREV_FILE = "/gree_capture_prev.txt"
   static var MAX_BYTES = 200000
@@ -319,6 +319,7 @@ class GreeTools
   static var ARM_MS = 600000          # startup capture gives up waiting for an IR command after 10 min
 
   var ir_seen, ir_last, ir_det        # protocol -> count; last IrReceived summary; detected HVAC brand
+  var ir_models                       # model -> count for the detected brand (the decoder's model guess varies)
   var det, det_state                  # last detection {"RX": res, "TX": res}; nil / "running"
   var cap                             # running capture (map) or nil
   var cap_done                        # summary of the last finished capture
@@ -328,6 +329,7 @@ class GreeTools
     self.cap_file = self.CAP_FILE
     self.prev_file = self.PREV_FILE
     self.ir_seen = {}
+    self.ir_models = {}
     self.ir_det = persist.find("gree_ir", nil)
     tasmota.add_rule("IrReceived", /v -> self.on_ir(v))
     tasmota.add_rule("IRHVAC", /v -> self.on_irhvac(v))
@@ -341,35 +343,52 @@ class GreeTools
   static def bus() return global.gree_bus end
 
   # ---------------- IR brand ----------------
+  # Short UNKNOWN codes are noise on the IR line (seen on GRJ819-A3 with the unit off): counted apart,
+  # kept in captures, but never taken as a remote press or as the start of a start-up capture.
+  static def ir_noise(p, bits) return p == "UNKNOWN" && bits < 16 end
+
   def on_ir(v)
     if type(v) != 'instance' && type(v) != 'map' return end
     var p = str(v.find("Protocol", "?"))
-    self.ir_seen[p] = self.ir_seen.find(p, 0) + 1
+    var bits = v.find("Bits", 0)
+    var noise = GreeTools.ir_noise(p, bits)
+    var k = noise ? "noise" : p
+    self.ir_seen[k] = self.ir_seen.find(k, 0) + 1
     var h = v.find("IRHVAC")
     var vendor = (h != nil) ? h.find("Vendor") : nil
     var model = (h != nil) ? h.find("Model") : nil
-    self.ir_last = {"protocol": p, "bits": v.find("Bits", 0), "vendor": vendor, "model": model,
-                    "t": tasmota.millis()}
+    if !noise
+      self.ir_last = {"protocol": p, "bits": bits, "vendor": vendor, "model": model, "t": tasmota.millis()}
+    end
     if vendor != nil
-      var d = {"vendor": str(vendor), "model": (model != nil) ? str(model) : "", "protocol": p, "bits": v.find("Bits", 0)}
+      var m = (model != nil) ? str(model) : ""
+      if self.ir_det == nil || self.ir_det.find("vendor") != str(vendor)
+        self.ir_models = {}
+      end
+      self.ir_models[m] = self.ir_models.find(m, 0) + 1
+      var best = (self.ir_det != nil && self.ir_det.find("vendor") == str(vendor) &&
+                  self.ir_models.contains(self.ir_det.find("model"))) ? self.ir_det["model"] : m   # ties keep the shown one
+      for km: self.ir_models.keys() if self.ir_models[km] > self.ir_models[best] best = km end end
+      var d = {"vendor": str(vendor), "model": best, "protocol": p, "bits": bits}
+      # flash is written only when the brand changes, or the most frequent model does
       if self.ir_det == nil || self.ir_det.find("vendor") != d["vendor"] || self.ir_det.find("model") != d["model"]
         self.ir_det = d
         persist.gree_ir = d
         persist.save()
-        log(string.format("IR: remote detected: %s %s (protocol %s, %d bits)", d["vendor"], d["model"], p, d["bits"]), 2)
+        log(string.format("IR: remote detected: %s %s (protocol %s, %d bits)", d["vendor"], d["model"], p, bits), 2)
       end
     end
-    self.cap_event("IR", json.dump(v), true)
+    self.cap_event("IR", json.dump(v), true, vendor != nil)     # only a decoded AC command starts a capture
   end
 
   def on_irhvac(v)
-    self.cap_event("IRHVAC", json.dump(v), true)
+    self.cap_event("IRHVAC", json.dump(v), true, true)
   end
 
   def ir_text()
     var d = self.ir_det
     var n = 0
-    for k: self.ir_seen.keys() n += self.ir_seen[k] end
+    for k: self.ir_seen.keys() if k != "noise" n += self.ir_seen[k] end end
     if d != nil
       var m = (d["model"] != "" && d["model"] != "-1") ? ", model " + d["model"] : ""
       return string.format("%s%s (%d presses since restart)", d["vendor"], m, n)
@@ -384,6 +403,7 @@ class GreeTools
   def reset_ir()
     self.ir_det = nil
     self.ir_seen = {}
+    self.ir_models = {}
     self.ir_last = nil
     persist.gree_ir = nil
     persist.save()
@@ -572,11 +592,15 @@ class GreeTools
   end
 
   # IR events: in a window they are written; while armed (startup) they start the capture
-  def cap_event(src, data, echo)
+  def cap_event(src, data, echo, trigger)
     var c = self.cap
     if c == nil return end
     var now = tasmota.millis()
     if c["mode"] == "startup" && c["k"] == 0
+      if !trigger                               # armed: noise or a non-AC code is kept with the pre-trigger frames
+        c["pre"].push([now, src, data])
+        return
+      end
       self.open_window(now)
     end
     if self.in_window(now) self.cap_line(now, src, data, echo) end
