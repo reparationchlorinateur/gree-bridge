@@ -1,0 +1,2927 @@
+{
+ "ok": true,
+ "rows": [
+  {
+   "group": "mesh",
+   "name": "base: watertight single body",
+   "value": 1.0,
+   "limit": 1,
+   "op": "==",
+   "ok": true,
+   "note": "23.5 cm3, ~30 g PETG solid-equivalent"
+  },
+  {
+   "group": "mesh",
+   "name": "lid: watertight single body",
+   "value": 1.0,
+   "limit": 1,
+   "op": "==",
+   "ok": true,
+   "note": "11.5 cm3, ~15 g PETG solid-equivalent"
+  },
+  {
+   "group": "mesh",
+   "name": "cap: watertight single body",
+   "value": 1.0,
+   "limit": 1,
+   "op": "==",
+   "ok": true,
+   "note": "0.2 cm3, ~0 g PETG solid-equivalent"
+  },
+  {
+   "group": "mesh",
+   "name": "base x lid overlap (mm3)",
+   "value": 0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "assembled, must not intersect"
+  },
+  {
+   "group": "mesh",
+   "name": "lid x cap overlap (mm3)",
+   "value": -0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "cap snapped in"
+  },
+  {
+   "group": "mesh",
+   "name": "base x cap overlap (mm3)",
+   "value": 0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "mesh",
+   "name": "base: OpenSCAD vs CadQuery symmetric difference (% of volume)",
+   "value": 0.061,
+   "limit": 0.5,
+   "op": "<=",
+   "ok": true,
+   "note": "text kerning + facet differences only"
+  },
+  {
+   "group": "mesh",
+   "name": "lid: OpenSCAD vs CadQuery symmetric difference (% of volume)",
+   "value": 0.373,
+   "limit": 0.5,
+   "op": "<=",
+   "ok": true,
+   "note": "text kerning + facet differences only"
+  },
+  {
+   "group": "mesh",
+   "name": "cap: OpenSCAD vs CadQuery symmetric difference (% of volume)",
+   "value": 0.004,
+   "limit": 0.5,
+   "op": "<=",
+   "ok": true,
+   "note": "text kerning + facet differences only"
+  },
+  {
+   "group": "mesh",
+   "name": "mounting face closed under the case body (open area, mm2)",
+   "value": 0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "flat back for double-sided tape"
+  },
+  {
+   "group": "mesh",
+   "name": "left ear screw hole: wall to hole edge",
+   "value": 6.35,
+   "limit": 2.0,
+   "op": ">=",
+   "ok": true,
+   "note": "hole at X -8.5, slots at [3.6, 14.0] mm from the wall"
+  },
+  {
+   "group": "mesh",
+   "name": "right ear screw hole: wall to hole edge",
+   "value": 6.35,
+   "limit": 2.0,
+   "op": ">=",
+   "ok": true,
+   "note": "hole at X 88.5, slots at [3.6, 14.0] mm from the wall"
+  },
+  {
+   "group": "board",
+   "name": "board x base overlap (mm3)",
+   "value": 0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "rests on 3 bosses + 2 rest ribs"
+  },
+  {
+   "group": "board",
+   "name": "board x lid overlap (mm3)",
+   "value": 0.0,
+   "limit": 0.01,
+   "op": "<=",
+   "ok": true,
+   "note": "clamped by 3 lid columns"
+  },
+  {
+   "group": "board",
+   "name": "H1: base boss top - board bottom",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "board sits on the boss"
+  },
+  {
+   "group": "board",
+   "name": "H1: lid column bottom - board top",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "column clamps the board"
+  },
+  {
+   "group": "board",
+   "name": "H2: base boss top - board bottom",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "board sits on the boss"
+  },
+  {
+   "group": "board",
+   "name": "H2: lid column bottom - board top",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "column clamps the board"
+  },
+  {
+   "group": "board",
+   "name": "H3: base boss top - board bottom",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "board sits on the boss"
+  },
+  {
+   "group": "board",
+   "name": "H3: lid column bottom - board top",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "column clamps the board"
+  },
+  {
+   "group": "board",
+   "name": "column / boss contact diameter vs 6.6 mm keep-out ring",
+   "value": 6.4,
+   "limit": 6.6,
+   "op": "<=",
+   "ok": true,
+   "note": "H*_SCREW_HEAD rule areas, r 3.3"
+  },
+  {
+   "group": "board",
+   "name": "lid rim to wall top (seam), nominal",
+   "value": 0.2,
+   "limit": 0.0,
+   "op": ">=",
+   "ok": true,
+   "note": "lid rides on the columns, board always clamped"
+  },
+  {
+   "group": "board",
+   "name": "seam with a 1.76 mm board (+10 %)",
+   "value": 0.04,
+   "limit": 0.0,
+   "op": ">=",
+   "ok": true,
+   "note": "JLCPCB 1.6 mm +/-10 %"
+  },
+  {
+   "group": "walls",
+   "name": "board outline to wall, minimum",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "section at mid-board height"
+  },
+  {
+   "group": "walls",
+   "name": "board edge to wall, left (J1)",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "walls",
+   "name": "board edge to wall, right (J5 / BME)",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "walls",
+   "name": "board edge to wall, front (J3 / BME)",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "walls",
+   "name": "board edge to wall, back (antenna edge)",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna end (6 mm overhang) to any case plastic",
+   "value": 5.0,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": "air only within 5 mm"
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to base",
+   "value": 5.0,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to lid",
+   "value": 9.001,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to nearest M3 screw (metal)",
+   "value": 34.91,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": "Espressif: keep metal >= 15 mm"
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to nearest M3 screw, recommended",
+   "value": 34.91,
+   "limit": 15.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to nearest boss / column (also heat-set insert spot)",
+   "value": 31.951,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to ear mounting screws (metal, head 8 mm)",
+   "value": 17.568,
+   "limit": 15.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "antenna",
+   "name": "antenna to nearest board rest rib",
+   "value": 6.443,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C1 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C1 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 12.9,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C1 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C10 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C10 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 5.865,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C10 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C10 C_0805 (top 1.45 above board): 3D gap to J5 cap",
+   "value": 25.702,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C11 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C11 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 12.328,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C11 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C11 C_0805 (top 1.45 above board): 3D gap to J5 cap",
+   "value": 26.656,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C12 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C12 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 13.25,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C12 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C13 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C13 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 13.25,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C13 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C14 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C14 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 11.505,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C14 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C2 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C2 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 12.774,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C2 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C3 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C3 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 10.489,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C3 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 4.125,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C4 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C4 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 10.484,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C4 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 5.35,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C4 C_1206 (top 1.80 above board): 3D gap to J5 cap",
+   "value": 28.696,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C5 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C5 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 12.001,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C5 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C6 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C6 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 7.792,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C6 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C7 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C7 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 4.839,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C7 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C7 C_1206 (top 1.80 above board): 3D gap to J5 cap",
+   "value": 26.348,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C8 C_1206 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C8 C_1206 (top 1.80 above board): 3D gap to lid",
+   "value": 9.91,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C8 C_1206 (top 1.80 above board): 3D gap to base",
+   "value": 2.96,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C8 C_1206 (top 1.80 above board): 3D gap to J5 cap",
+   "value": 26.346,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C9 C_0805 (top 1.45 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C9 C_0805 (top 1.45 above board): 3D gap to lid",
+   "value": 6.33,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "C9 C_0805 (top 1.45 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D1 D_SMA (top 2.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D1 D_SMA (top 2.60 above board): 3D gap to lid",
+   "value": 10.407,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D1 D_SMA (top 2.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D1 D_SMA (top 2.60 above board): vertical gap to lid above",
+   "value": 12.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D2 D_SMA (top 2.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D2 D_SMA (top 2.60 above board): 3D gap to lid",
+   "value": 1.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D2 D_SMA (top 2.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D2 D_SMA (top 2.60 above board): vertical gap to lid above",
+   "value": 1.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D3 LED_1206 (top 1.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D3 LED_1206 (top 1.20 above board): 3D gap to lid",
+   "value": 1.65,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D3 LED_1206 (top 1.20 above board): 3D gap to base",
+   "value": 2.793,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D3 LED_1206 (top 1.20 above board): 3D gap to J5 cap",
+   "value": 21.521,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D4 LED_1206 (top 1.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D4 LED_1206 (top 1.20 above board): 3D gap to lid",
+   "value": 2.5,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "D4 LED_1206 (top 1.20 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "F1 Fuse_1206 (top 1.30 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "F1 Fuse_1206 (top 1.30 above board): 3D gap to lid",
+   "value": 5.259,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "F1 Fuse_1206 (top 1.30 above board): 3D gap to base",
+   "value": 5.497,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q1 SOT-23 (top 1.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q1 SOT-23 (top 1.20 above board): 3D gap to lid",
+   "value": 13.5,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q1 SOT-23 (top 1.20 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q2 SOT-23 (top 1.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q2 SOT-23 (top 1.20 above board): 3D gap to lid",
+   "value": 12.418,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "Q2 SOT-23 (top 1.20 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R1 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R1 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 6.47,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R1 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R1 R_0805 (top 0.60 above board): 3D gap to J5 cap",
+   "value": 24.79,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R10 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R10 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R10 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R11 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R11 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R11 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R12 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R12 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 8.442,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R12 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R13 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R13 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 13.079,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R13 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R14 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R14 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 4.351,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R14 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 5.073,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R14 R_0805 (top 0.60 above board): 3D gap to J5 cap",
+   "value": 26.954,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R15 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R15 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 1.825,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R15 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 2.922,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R15 R_0805 (top 0.60 above board): 3D gap to J5 cap",
+   "value": 24.561,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R16 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R16 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R16 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R2 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R2 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 6.324,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R2 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 3.69,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R2 R_0805 (top 0.60 above board): 3D gap to J5 cap",
+   "value": 12.602,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R3 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R3 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 1.75,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R3 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 2.371,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R3 R_0805 (top 0.60 above board): 3D gap to J5 cap",
+   "value": 20.883,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R4 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R4 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 3.662,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R4 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R5 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R5 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R5 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R6 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R6 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R6 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R7 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R7 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 14.1,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R7 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R8 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R8 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 13.772,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R8 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R9 R_0805 (top 0.60 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R9 R_0805 (top 0.60 above board): 3D gap to lid",
+   "value": 13.539,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "R9 R_0805 (top 0.60 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U1 TSOT-23-6 (top 1.10 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U1 TSOT-23-6 (top 1.10 above board): 3D gap to lid",
+   "value": 11.763,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U1 TSOT-23-6 (top 1.10 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U2 SOT-223 (top 1.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U2 SOT-223 (top 1.80 above board): 3D gap to lid",
+   "value": 2.484,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U2 SOT-223 (top 1.80 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U2 SOT-223 (top 1.80 above board): 3D gap to J5 cap",
+   "value": 29.786,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U3 SOIC-14 (top 1.75 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U3 SOIC-14 (top 1.75 above board): 3D gap to lid",
+   "value": 9.965,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U3 SOIC-14 (top 1.75 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "L1 inductor (top 4.50 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "L1 inductor (top 4.50 above board): 3D gap to lid",
+   "value": 8.028,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "L1 inductor (top 4.50 above board): 3D gap to base",
+   "value": 5.45,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "L1 inductor (top 4.50 above board): vertical gap to lid above",
+   "value": 10.2,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U4 module (top 3.25 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U4 module (top 3.25 above board): 3D gap to lid",
+   "value": 7.438,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U4 module (top 3.25 above board): 3D gap to base",
+   "value": 3.356,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U4 module (top 3.25 above board): 3D gap to J5 cap",
+   "value": 10.708,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U4 module (top 3.25 above board): vertical gap to lid above",
+   "value": 11.45,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_body (top 3.50 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_body (top 3.50 above board): 3D gap to lid",
+   "value": 1.8,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_body (top 3.50 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_body (top 3.50 above board): 3D gap to J5 cap",
+   "value": 16.191,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_body (top 3.50 above board): vertical gap to lid above",
+   "value": 1.8,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_legs (top 1.00 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_legs (top 1.00 above board): 3D gap to lid",
+   "value": 3.824,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_legs (top 1.00 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_legs (top 1.00 above board): 3D gap to J5 cap",
+   "value": 16.812,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_actuator (top 4.30 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_actuator (top 4.30 above board): 3D gap to lid",
+   "value": 1.0,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_actuator (top 4.30 above board): 3D gap to base",
+   "value": 6.6,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_actuator (top 4.30 above board): 3D gap to J5 cap",
+   "value": 17.237,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW1 switch_actuator (top 4.30 above board): vertical gap to lid feature above",
+   "value": 1.0,
+   "limit": [
+    0.8,
+    3.0
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "RESET guide tube"
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_body (top 3.50 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_body (top 3.50 above board): 3D gap to lid",
+   "value": 0.866,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_body (top 3.50 above board): 3D gap to base",
+   "value": 1.819,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_body (top 3.50 above board): 3D gap to J5 cap",
+   "value": 11.433,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_body (top 3.50 above board): vertical gap to lid above",
+   "value": 1.1,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_legs (top 1.00 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_legs (top 1.00 above board): 3D gap to lid",
+   "value": 0.9,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_legs (top 1.00 above board): 3D gap to base",
+   "value": 1.836,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_legs (top 1.00 above board): 3D gap to J5 cap",
+   "value": 13.665,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_actuator (top 4.30 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_actuator (top 4.30 above board): 3D gap to lid",
+   "value": 0.3,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_actuator (top 4.30 above board): 3D gap to base",
+   "value": 2.979,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_actuator (top 4.30 above board): 3D gap to J5 cap",
+   "value": 11.67,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "SW2 switch_actuator (top 4.30 above board): vertical gap to lid feature above",
+   "value": 0.3,
+   "limit": [
+    0.2,
+    0.5
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "BOOT stem, by design 0.30"
+  },
+  {
+   "group": "parts",
+   "name": "J1 xh_header (top 7.00 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xh_header (top 7.00 above board): 3D gap to lid",
+   "value": 4.805,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xh_header (top 7.00 above board): 3D gap to base",
+   "value": 1.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xh_header (top 7.00 above board): vertical gap to lid above",
+   "value": 7.7,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xhp_plug (top 9.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xhp_plug (top 9.80 above board): 3D gap to lid",
+   "value": 2.147,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xhp_plug (top 9.80 above board): 3D gap to base",
+   "value": 1.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 xhp_plug (top 9.80 above board): vertical gap to lid above",
+   "value": 4.9,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xh_header (top 7.00 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xh_header (top 7.00 above board): 3D gap to lid",
+   "value": 0.75,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xh_header (top 7.00 above board): 3D gap to base",
+   "value": 1.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xh_header (top 7.00 above board): vertical gap to lid above",
+   "value": 7.7,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xhp_plug_optional (top 9.80 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xhp_plug_optional (top 9.80 above board): 3D gap to lid",
+   "value": 0.75,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xhp_plug_optional (top 9.80 above board): 3D gap to base",
+   "value": 1.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J3 xhp_plug_optional (top 9.80 above board): vertical gap to lid above",
+   "value": 4.9,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_body (top 2.54 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_body (top 2.54 above board): 3D gap to lid",
+   "value": 9.656,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_body (top 2.54 above board): 3D gap to base",
+   "value": 1.78,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_body (top 2.54 above board): 3D gap to J5 cap",
+   "value": 10.56,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_pins (top 8.54 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_pins (top 8.54 above board): 3D gap to lid",
+   "value": 6.47,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_pins (top 8.54 above board): 3D gap to base",
+   "value": 2.469,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J5 header_pins (top 8.54 above board): 3D gap to J5 cap",
+   "value": 4.675,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_header (top 2.50 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_header (top 2.50 above board): 3D gap to lid",
+   "value": 0.73,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_header (top 2.50 above board): 3D gap to base",
+   "value": 1.53,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_header (top 2.50 above board): 3D gap to J5 cap",
+   "value": 24.312,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_header (top 2.50 above board): vertical gap to lid above",
+   "value": 9.2,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_breakout (top 6.00 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_breakout (top 6.00 above board): 3D gap to lid",
+   "value": 0.65,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_breakout (top 6.00 above board): 3D gap to base",
+   "value": 1.45,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_breakout (top 6.00 above board): 3D gap to J5 cap",
+   "value": 22.642,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "U5 bme_breakout (top 6.00 above board): vertical gap to lid above",
+   "value": 5.7,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_riser_bend (top 14.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_riser_bend (top 14.20 above board): 3D gap to lid",
+   "value": 0.5,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_riser_bend (top 14.20 above board): 3D gap to base",
+   "value": 1.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_riser_bend (top 14.20 above board): vertical gap to lid above",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "flexible wires, 1.9 mm max OD envelope"
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_run (top 14.20 above board): overlap with case (mm3)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_run (top 14.20 above board): 3D gap to lid",
+   "value": 0.5,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_run (top 14.20 above board): 3D gap to base",
+   "value": 0.55,
+   "limit": 0.25,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "parts",
+   "name": "J1 wires_run (top 14.20 above board): vertical gap to lid above",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "flexible wires, 1.9 mm max OD envelope"
+  },
+  {
+   "group": "J5 access",
+   "name": "Dupont 1x6 on J5 through the lid opening (cap off): gap to lid",
+   "value": 1.03,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": "housing top 25.6 vs lid top 25.3"
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J1/J3 xh_tail (3.4 below board): gap to base",
+   "value": 1.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "J5 j5_tail (1.7 below board): gap to base",
+   "value": 1.35,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U5 u5_tail_untrimmed (4.4 below board): gap to base",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "U4 centre_pad_solder (1.0 below board): gap to base",
+   "value": 4.0,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "under",
+   "name": "bottom-side THT pads to boss / rest rib tops (closest: J1)",
+   "value": 1.125,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": "solder fillets stay free"
+  },
+  {
+   "group": "J1 cable",
+   "name": "window width vs 5-wire ribbon (2.5 pitch, 1.9 OD)",
+   "value": 1.1,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": "window 13.0 x 4.0 mm"
+  },
+  {
+   "group": "J1 cable",
+   "name": "window bottom below wire run",
+   "value": 1.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "J1 cable",
+   "name": "wire run top to lid underside",
+   "value": 0.5,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "bend r 2.5 mm, worst-case OD 1.9 mm"
+  },
+  {
+   "group": "J1 cable",
+   "name": "J1 mated plug top to lid underside",
+   "value": 4.9,
+   "limit": 3.0,
+   "op": ">=",
+   "ok": true,
+   "note": "room for the wires to turn"
+  },
+  {
+   "group": "J1 cable",
+   "name": "zip-tie tunnel width (strap <= 3.6 mm)",
+   "value": 3.6,
+   "limit": 3.6,
+   "op": ">=",
+   "ok": true,
+   "note": "height 1.8 mm"
+  },
+  {
+   "group": "buttons",
+   "name": "RESET hole centre to SW1 actuator centre (xy)",
+   "value": 0.0,
+   "limit": 0.1,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT stem centre to SW2 actuator centre (xy)",
+   "value": 0.0,
+   "limit": 0.1,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT stem diameter vs 3.5 mm actuator",
+   "value": 3.0,
+   "limit": 3.5,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT stem to actuator top",
+   "value": 0.3,
+   "limit": [
+    0.2,
+    0.5
+   ],
+   "op": "in",
+   "ok": true,
+   "note": "0.25 mm switch travel"
+  },
+  {
+   "group": "buttons",
+   "name": "BOOT tongue strain at the hinge, 0.75 mm stroke (%)",
+   "value": 1.557,
+   "limit": 2.5,
+   "op": "<=",
+   "ok": true,
+   "note": "cantilever 8.5 mm x 1.0 mm PETG, yield ~4 %"
+  },
+  {
+   "group": "buttons",
+   "name": "RESET guide tube bottom to SW1 actuator top",
+   "value": 1.0,
+   "limit": 0.8,
+   "op": ">=",
+   "ok": true,
+   "note": "poke with a paper clip"
+  },
+  {
+   "group": "LEDs",
+   "name": "D4 (red PWR) light hole centre offset",
+   "value": 0.0,
+   "limit": 0.1,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "LEDs",
+   "name": "D3 (green LINK) light hole centre offset",
+   "value": 0.0,
+   "limit": 0.1,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "LEDs",
+   "name": "light tube bottom to LED top",
+   "value": 2.5,
+   "limit": 1.5,
+   "op": ">=",
+   "ok": true,
+   "note": "tubes stop light bleeding between LEDs"
+  },
+  {
+   "group": "fits",
+   "name": "lid lip to base wall",
+   "value": 0.3,
+   "limit": 0.28,
+   "op": ">=",
+   "ok": true,
+   "note": "section 1.5 mm under the lid plate"
+  },
+  {
+   "group": "fits",
+   "name": "lid lip to base wall, maximum play",
+   "value": 0.3,
+   "limit": 0.4,
+   "op": "<=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "fits",
+   "name": "J5 cap flange to recess",
+   "value": 0.3,
+   "limit": 0.28,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "fits",
+   "name": "J5 cap plug to opening",
+   "value": 0.15,
+   "limit": 0.13,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "fits",
+   "name": "J5 cap snap overlap under the plate (per side)",
+   "value": 0.3,
+   "limit": 0.2,
+   "op": ">=",
+   "ok": true,
+   "note": "bumps flex the 0.8 mm plug walls"
+  },
+  {
+   "group": "screws",
+   "name": "M3 x 20 thread engagement in the base boss",
+   "value": 5.7,
+   "limit": 5.0,
+   "op": ">=",
+   "ok": true,
+   "note": "self-tapping in 2.5 mm pilot"
+  },
+  {
+   "group": "screws",
+   "name": "M3 x 20 tip above pilot hole bottom",
+   "value": 0.3,
+   "limit": 0.2,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "screws",
+   "name": "M3 x 20 tip above the mounting face",
+   "value": 1.3,
+   "limit": 1.0,
+   "op": ">=",
+   "ok": true,
+   "note": "flat back stays closed"
+  },
+  {
+   "group": "screws",
+   "name": "pan head (2.4 mm) recessed below the lid top",
+   "value": 1.6,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle to breakout (side)",
+   "value": 0.65,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle to J3 header (side)",
+   "value": 0.75,
+   "limit": 0.5,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "baffle bottom above board",
+   "value": 0.6,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "baffle over the milled slots"
+  },
+  {
+   "group": "BME280",
+   "name": "base rib top below board",
+   "value": 0.4,
+   "limit": 0.3,
+   "op": ">=",
+   "ok": true,
+   "note": "rib under the slots"
+  },
+  {
+   "group": "BME280",
+   "name": "vent area over the breakout, lid (mm2)",
+   "value": 80.453,
+   "limit": 50,
+   "op": ">=",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "group": "BME280",
+   "name": "vent area beside the breakout, walls (mm2)",
+   "value": 218.7,
+   "limit": 100,
+   "op": ">=",
+   "ok": true,
+   "note": "right + front walls, also under the board"
+  },
+  {
+   "group": "print",
+   "name": "base: widest unsupported bridge / ledge (no supports)",
+   "value": 3.6,
+   "limit": 5.0,
+   "op": "<=",
+   "ok": true,
+   "note": "z 18.4, around (-2, 32)"
+  },
+  {
+   "group": "print",
+   "name": "base: flat on the bed (min z)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "print size 114.0 x 69.5 x 23.1 mm"
+  },
+  {
+   "group": "print",
+   "name": "lid: widest unsupported bridge / ledge (no supports)",
+   "value": 3.196,
+   "limit": 5.0,
+   "op": "<=",
+   "ok": true,
+   "note": "z 0.3, around (70, 42)"
+  },
+  {
+   "group": "print",
+   "name": "lid: flat on the bed (min z)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "print size 80.0 x 69.5 x 16.7 mm"
+  },
+  {
+   "group": "print",
+   "name": "cap: widest unsupported bridge / ledge (no supports)",
+   "value": 0.0,
+   "limit": 5.0,
+   "op": "<=",
+   "ok": true,
+   "note": "z 2.2, around (7, 12)"
+  },
+  {
+   "group": "print",
+   "name": "cap: flat on the bed (min z)",
+   "value": 0.0,
+   "limit": 0.0,
+   "op": "==",
+   "ok": true,
+   "note": "print size 6.0 x 19.2 x 3.6 mm"
+  }
+ ],
+ "dims": {
+  "body": [
+   80.0,
+   69.55,
+   25.299999999999997
+  ],
+  "with_ears": [
+   114.0,
+   69.55000305175781,
+   25.299999237060547
+  ]
+ },
+ "annot": {
+  "A": [
+   "J1 plug top -> lid underside  4.90 mm",
+   "wires (1.9 OD, r 2.5) -> lid   0.50 mm",
+   "window 13 x 4.0 mm, ribbon 11.9 x 1.9",
+   "BOOT stem -> SW2 actuator  0.30 mm",
+   "RESET tube -> SW1 actuator  1.00 mm"
+  ],
+  "B": [
+   "antenna end -> nearest case plastic  5.00 mm (air)",
+   "antenna -> nearest screw   34.9 mm",
+   "baffle -> breakout 0.65 mm, -> J3 0.75 mm",
+   "BME vents: lid 80 mm2, walls 219 mm2"
+  ]
+ },
+ "tall": [
+  {
+   "ref": "L1",
+   "kind": "inductor",
+   "h": 4.5,
+   "up": 10.199999237060547,
+   "gap_lid": 8.027607251225895,
+   "gap_base": 5.450000000000003
+  },
+  {
+   "ref": "U4",
+   "kind": "module",
+   "h": 3.25,
+   "up": 11.449999237060547,
+   "gap_lid": 7.438078336909949,
+   "gap_base": 3.355964838909969
+  },
+  {
+   "ref": "SW1",
+   "kind": "switch_body",
+   "h": 3.5,
+   "up": 1.7999996185302738,
+   "gap_lid": 1.7999996185302738,
+   "gap_base": 6.599999999999999
+  },
+  {
+   "ref": "SW1",
+   "kind": "switch_actuator",
+   "h": 4.300000000000001,
+   "up": 0.9999996185302731,
+   "gap_lid": 0.9999996185302731,
+   "gap_base": 6.6
+  },
+  {
+   "ref": "SW2",
+   "kind": "switch_body",
+   "h": 3.5,
+   "up": 1.099999809265137,
+   "gap_lid": 0.866319424709793,
+   "gap_base": 1.8194805153201024
+  },
+  {
+   "ref": "SW2",
+   "kind": "switch_actuator",
+   "h": 4.300000000000001,
+   "up": 0.29999980926513636,
+   "gap_lid": 0.29999980926513636,
+   "gap_base": 2.9785974750021174
+  },
+  {
+   "ref": "J1",
+   "kind": "xh_header",
+   "h": 7.0,
+   "up": 7.699999237060547,
+   "gap_lid": 4.805204764457986,
+   "gap_base": 1.5499999999999998
+  },
+  {
+   "ref": "J1",
+   "kind": "xhp_plug",
+   "h": 9.799999999999999,
+   "up": 4.899999237060548,
+   "gap_lid": 2.147090380219395,
+   "gap_base": 1.5499999999999998
+  },
+  {
+   "ref": "J3",
+   "kind": "xh_header",
+   "h": 7.0,
+   "up": 7.699999237060547,
+   "gap_lid": 0.75,
+   "gap_base": 1.5499999999999998
+  },
+  {
+   "ref": "J3",
+   "kind": "xhp_plug_optional",
+   "h": 9.799999999999999,
+   "up": 4.899999237060548,
+   "gap_lid": 0.75,
+   "gap_base": 1.5499999999999998
+  },
+  {
+   "ref": "J5",
+   "kind": "header_pins",
+   "h": 8.540000000000001,
+   "up": 1000000000.0,
+   "gap_lid": 6.470392454529701,
+   "gap_base": 2.4686861839080882
+  },
+  {
+   "ref": "U5",
+   "kind": "bme_breakout",
+   "h": 6.0,
+   "up": 5.699999237060547,
+   "gap_lid": 0.6499999999999986,
+   "gap_base": 1.4500000000000028
+  },
+  {
+   "ref": "J1",
+   "kind": "wires_riser_bend",
+   "h": 14.200000000000001,
+   "up": 0.49999923706054616,
+   "gap_lid": 0.49999923706054616,
+   "gap_base": 1.5499999999999998
+  },
+  {
+   "ref": "J1",
+   "kind": "wires_run",
+   "h": 14.200000000000001,
+   "up": 0.49999923706054616,
+   "gap_lid": 0.49999923706054616,
+   "gap_base": 0.5499999999999972
+  }
+ ]
+}

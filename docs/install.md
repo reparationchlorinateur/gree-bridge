@@ -107,7 +107,7 @@ Breaker on, then check:
 - `BusAuto` shows the tap polarity. On the first board: RX inverted, TX normal (these are also the starting values). If a tap shows bytes but no frames, the script switches its polarity by itself within about 20 s and saves the one that works.
 - `Weblog 3` shows the raw `BUS: RX ...` lines (set back with `Weblog 2`).
 
-Fix the board so it cannot move (a printed case, or standoffs on the M3 holes) and keep it and the cable away from the hot side and the fan.
+Fix the board so it cannot move (the [printed case](../hardware/case/), or standoffs on the M3 holes) and keep it and the cable away from the hot side and the fan.
 
 ## 7a. With Home Assistant
 
