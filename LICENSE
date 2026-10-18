@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 This licence covers the software in this repository: the Berry scripts, the
-Home Assistant files, the tests and the shell scripts. The hardware design
+Home Assistant files, the tests and the shell and Python scripts. The hardware design
 files and the documentation are under CC BY-SA 4.0 (see hardware/LICENSE.md).
 The prebuilt firmware binaries in firmware/build/ are Tasmota, under the
 GNU GPL v3.0 (see firmware/build/README.md).

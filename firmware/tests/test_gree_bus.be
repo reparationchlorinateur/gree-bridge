@@ -11,6 +11,8 @@ LOGS = []
 SERIALS = {}
 class serial
   static var SERIAL_8E1 = 0x800001e
+  static var SERIAL_8N1 = 0x800001c
+  static var SERIAL_8O1 = 0x800001f
   var rx, tx, baud, mode, inv, queue, ready
   def init(rx, tx, baud, mode, inv)
     self.rx = rx  self.tx = tx  self.baud = baud  self.mode = mode  self.inv = inv
@@ -420,4 +422,37 @@ MQTT_UP = true
 NOW += 1000 tick()
 check("announced when MQTT is back", size(disc_pubs()) == n0 + 100)
 check("GREE values still published normally", size(gree_pubs()) > 0)
+
+# ---------------- hooks for gree_tools.be: frames, pause / resume, serial settings ----------------
+var got = []
+var hk = /tap, f, now -> got.push([tap, size(f)])
+gree_bus.add_hook(hk)
+gree_bus.add_hook(hk)
+check("a hook is added once", size(gree_bus.hooks) == 1)
+def bad_hook(tap, f, now) raise "test_error", "boom" end
+gree_bus.add_hook(bad_hook)
+var rx = SERIALS[6]
+send_frame(rx, NOW + 10, frame(0x40, 9))
+run(NOW + 1000)
+check("hooks get every raw frame, a failing hook does not stop the decoder", size(got) == 1 && got[0] == ["RX", 9])
+gree_bus.hooks.remove(1)
+gree_bus.remove_hook(hk)
+check("remove_hook", size(gree_bus.hooks) == 0)
+gree_bus.pause()
+check("pause closes both taps", gree_bus.paused && gree_bus.taps[0].ser == nil && gree_bus.taps[1].ser == nil && rx.closed)
+gree_bus.loop()
+gree_bus.resume()
+check("resume reopens them with the same settings", !gree_bus.paused && SERIALS[6] != rx && SERIALS[6].baud == 600 &&
+      SERIALS[6].mode == serial.SERIAL_8E1)
+tasmota.cmds["BusSerial"]("BusSerial", 0, "", nil)
+check("BusSerial shows 600,8E1", tasmota.resp == '{"BusSerial":"600,8E1"}')
+tasmota.cmds["BusSerial"]("BusSerial", 0, "1200,8n1", nil)
+check("BusSerial 1200,8n1 reopens both taps and saves", SERIALS[6].baud == 1200 && SERIALS[7].mode == serial.SERIAL_8N1 &&
+      persist.find("bus_baud", nil) == 1200 && persist.find("bus_fmt", nil) == "8N1" && tasmota.resp == '{"BusSerial":"1200,8N1"}')
+tasmota.cmds["BusSerial"]("BusSerial", 0, "1200,9X9", nil)
+check("unknown format refused", string.find(tasmota.resp, "usage") == 0 && gree_bus.fmt == "8N1")
+var tx_inv = gree_bus.taps[1].inverted
+check("set_serial with polarity (RX only given, TX kept)", gree_bus.set_serial(600, "8E1", {"RX": false}) && SERIALS[6].inv == false &&
+      SERIALS[7].inv == tx_inv && persist.find("bus_inv_rx", nil) == false && gree_bus.fmt == "8E1" && SERIALS[6].baud == 600)
+gree_bus.set_serial(600, "8E1", {"RX": true})
 print(dfail == 0 ? "DECODER ALL PASS" : string.format("DECODER %d FAILURES", dfail))

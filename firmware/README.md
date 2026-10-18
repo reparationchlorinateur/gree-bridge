@@ -13,7 +13,8 @@ Step-by-step setup: [docs/install.md](../docs/install.md).
 | [`build/user_config_override.h`](build/user_config_override.h) | The build options; how to rebuild: [`build/README.md`](build/README.md) |
 | [`tasmota/gree_bus.be`](tasmota/gree_bus.be) | Bus decoder: indoor frames and outdoor replies on both taps, main-page rows, MQTT `tele/<topic>/GREE`, Home Assistant discovery, polarity auto-detect |
 | [`tasmota/gree_matter.be`](tasmota/gree_matter.be) | Apple Home (Matter) glue: keeps Tasmota's Matter thermostat (v.HVAC) in line with the bus and the last IR command. Idle until Matter is turned on |
-| [`tasmota/autoexec.be`](tasmota/autoexec.be) | Loads both scripts at boot |
+| [`tasmota/gree_tools.be`](tasmota/gree_tools.be) | Optional "Gree tools" page: IR brand detection, bus speed / format / polarity detection, captures for decoding other units ([docs/adapting.md](../docs/adapting.md)) |
+| [`tasmota/autoexec.be`](tasmota/autoexec.be) | Loads the scripts at boot (`gree_tools.be` only if it is on the board) |
 | [`tasmota/template.json`](tasmota/template.json) | GPIO template |
 | [`tests/`](tests/) | Host tests for both scripts, with mocks of the Tasmota API |
 
@@ -30,6 +31,22 @@ Also over MQTT as `cmnd/<topic>/<command>`. Values marked "saved" survive a rest
 | `BusPublish 0\|1` | Also publish raw frames to `tele/<topic>/BUS_RX` and `BUS_TX` (default 0, saved) |
 | `BusGap <ms>` | Silence that ends a raw frame (default 300, saved) |
 | `BusLen <n>` | Fixed raw frame length, 0 = split on silence (default 0, saved) |
+| `BusSerial <baud>,<format>` | Serial settings of both taps, e.g. `BusSerial 600,8E1` (default, saved). For other units; `BusDetect apply` sets it |
+
+## Console commands (`gree_tools.be`)
+
+| Command | What it does |
+|---|---|
+| `IrDetect` | Brand, model and protocol of the wall remote as decoded by Tasmota (press any button on the remote first); `IrDetect 0` forgets it |
+| `BusDetect` | Measures speed, format and polarity of both taps (about 5 s, bus decoder paused). Result in the console, on the Gree tools page and as `{"BusDetect":...}` on `stat/<topic>/RESULT` |
+| `BusDetect apply` | Uses the detected settings; turns `BusAuto` off when they are not Gree's 600 8E1 |
+| `GreeCapture <s>` | One capture of `<s>` seconds now (1 to 600) |
+| `GreeCapture <s>,<every>,<n>` | `<n>` captures of `<s>` seconds, one every `<every>` seconds |
+| `GreeCapture startup` | Waits for the next IR command (wall remote, Home Assistant or Apple Home), keeps the 3 s before it, captures 5 s, then 5 s again 1, 2 and 3 minutes later |
+| `GreeCapture stop` / `GreeCapture` | Ends the capture / shows its status |
+| `GreeMark <text>` | Writes a note into the running capture |
+
+Captures go to `/gree_capture.txt` (the previous one to `/gree_capture_prev.txt`), one line per event: `<ms> RX|TX|IR|IRHVAC|GREE|MARK <data>`, comments start with `#`. Every line is also printed in the console (`CAP: ...`). Format and how to use them: [docs/adapting.md](../docs/adapting.md).
 
 Raw frames are written to the log at level 3: `Weblog 3` shows them in the web console (`Weblog 2` to go back).
 
@@ -63,8 +80,11 @@ It never sends IR itself. It does nothing until Matter is on (`SetOption151 1`) 
 The scripts are tested on a computer with the [Berry](https://github.com/berry-lang/berry) interpreter and small mocks of the Tasmota API (`persist.be`, `mqtt.be`, and mocks inside the test files). Build Berry, then from the `tests/` folder:
 
 ```
-berry test_gree_bus.be      # 65 tests: indoor and outdoor frames, links, polarity, discovery, commands
-berry test_gree_matter.be   # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
+berry test_gree_bus.be          # 74 tests: indoor and outdoor frames, links, polarity, discovery, commands, hooks
+berry test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
+berry test_gree_tools.be        # 45 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
+                                #           IR brand, captures (single, sequence, start-up), web page
+berry test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
 ```
 
-`test_gree_bus.be` also replays real captured frames.
+`test_gree_bus.be` also replays real captured frames. The mocks are `persist.be`, `mqtt.be`, `gpio.be` (pin levels from a simulated line), `path.be` and `webserver.be`.

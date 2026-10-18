@@ -13,7 +13,7 @@ Hardware reference: [hardware.md](hardware.md). Bus decoding: [protocol.md](prot
 - Chrome or Edge (the web flasher needs Web Serial), or `esptool.py`.
 - From this repository:
   - [`firmware/build/gree_tasmota32s3_15.6.0.factory.bin`](../firmware/build/) (first flash),
-  - [`firmware/tasmota/`](../firmware/tasmota/): `gree_bus.be`, `gree_matter.be`, `autoexec.be` (the same three files on every board),
+  - [`firmware/tasmota/`](../firmware/tasmota/): `gree_bus.be`, `gree_matter.be`, `autoexec.be` and, optionally, `gree_tools.be` (the same files on every board),
   - [`homeassistant/`](../homeassistant/) (only with Home Assistant).
 - A 5-wire cable with a JST XH 5-pin housing (XHP-5 and SXH-001T-P0.6 crimps) to the Gree indoor board.
 - A name for each room, chosen **before** the board first connects to MQTT (Home Assistant builds the entity ids from it and keeps them):
@@ -77,7 +77,7 @@ GPIO0 = BOOT button, GPIO4 = IR in, GPIO5 = IR out, GPIO8/9 = I2C (BME280, J3), 
 
 ## 5. Scripts
 
-1. **Tools → Manage File system**: upload `gree_bus.be`, `gree_matter.be` and `autoexec.be`.
+1. **Tools → Manage File system**: upload `gree_bus.be`, `gree_matter.be` and `autoexec.be`, plus `gree_tools.be` if you want the Gree tools page (IR brand detection, bus speed detection, captures: needed to adapt the board to another unit, see [adapting.md](adapting.md)).
 2. Console: `BrRestart`.
 3. Checks:
    - The main page shows the BME280 rows (temperature, humidity, dew point, pressure) and "Gree link: no valid frame yet" (normal on the bench).
