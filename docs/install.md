@@ -117,7 +117,7 @@ Breaker on, then check:
 - The wall remote works as before, and the console shows `IrReceived` with `"Protocol":"GREE"` at each press.
 - About 30 s after the unit is powered (the indoor unit starts talking about 25 s after power-up), the main page shows the Gree rows: room, coil, state, indoor fan, link OK, compressor, outdoor values.
 - `BusAuto` shows the tap polarity. On the first board: RX inverted, TX normal (these are also the starting values). If a tap shows bytes but no frames, the script switches its polarity by itself within about 20 s and saves the one that works.
-- `Weblog 3` shows the raw `BUS: RX ...` lines (set back with `Weblog 2`).
+- `BusLog 1` shows the raw `BUS: RX ...` lines in the console (`BusLog 0` to stop; it is off by default).
 
 Fix the board so it cannot move (the [printed case](../hardware/case/), or standoffs on the M3 holes) and keep it and the cable away from the hot side and the fan.
 
@@ -195,7 +195,7 @@ Other ecosystems: the board is a standard Matter thermostat, so Google Home, Ama
 | Symptom | Check |
 |---|---|
 | Flasher can't open or connect | see step 2 |
-| No Gree rows on the main page | unit powered and running; J1-3 / J1-4 wiring; `BusAuto`; `Weblog 3` |
+| No Gree rows on the main page | unit powered and running; J1-3 / J1-4 wiring; `BusAuto`; `BusLog 1` |
 | "Gree link: STANDBY" | normal: the indoor unit stops polling the outdoor unit some time after it is switched off |
 | Remote presses not seen | J1-2 (IR line); the console should show `IrReceived` |
 | Unit does not react to commands | J1-2; send `IRhvac` from the console; the unit beeps when it accepts a command |

@@ -49,6 +49,8 @@
     Gree             current decoded values
     GreeInterval <s> minimum seconds between publishes when only temperatures change (default 10, saved)
     BusPublish 0|1   also publish raw frames to tele/<topic>/BUS_RX and BUS_TX (default 0, saved)
+    BusLog 0|1       write every raw frame to the console log, at INFO level (default 0, saved);
+                     turn it on only while looking at frames: with it off, nothing is formatted per frame
     BusGap <ms>      silence that ends a frame                                 (default 300, saved)
     BusLen <n>       fixed frame length once known, 0 = split on silence       (default 0, saved)
     GreeDiscovery 0|1  Home Assistant discovery off (removes the entities) / on (default 1, saved);
@@ -58,7 +60,7 @@
                      (unit in standby) never triggers a switch; no value = show status
     BusSerial <baud>,<format>  serial settings of both taps, e.g. BusSerial 600,8E1 (default, saved);
                      for other units, found with BusDetect (gree_tools.be)
-  Raw frames are written to the log at level 3: use "Weblog 3" to see them in the web console.
+  Raw frames are not logged unless BusLog is on; the main page always shows the last frame of each tap.
 
   Indoor frame, measured on GWH12KF (2026-10-07): 600 baud 8E1 (one idle bit between bytes),
   9 bytes every 1.0 s:  07 b1 b2 b3 00 b5 b6 ck 0D   with ck = b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6
@@ -375,11 +377,11 @@ class GreeBus
   static var TX_INVERTED = false
   static var AUTO_MS     = 20000
   static var AUTO_BYTES  = 30      # ... and at least this many bytes arrived without a valid frame
-  static var LOG_LEVEL   = 3       # raw frames: 3 = DEBUG ("Weblog 3" to see them), 2 = INFO
+  static var LOG_LEVEL   = 2       # raw frames, when BusLog is on: 2 = INFO (shown in the console)
   static var MAX_LEN     = 80      # keeps the HA state under its 255-character limit
   static var HEARTBEAT   = 60      # republish decoded values at least this often (s)
   # -----------------------------------------------------------
-  static var VERSION     = "2026-10-18 rev B"
+  static var VERSION     = "2026-10-20 rev B"
   # Home Assistant entities: component, object id, name, value template, extra discovery keys
   static var HA = [
     ["sensor", "room_temperature", "Room temperature (unit)", "{{ value_json.Gree.Room }}",
@@ -433,10 +435,11 @@ class GreeBus
   ]
   var taps, publish, gap, flen, topic, indoor, outdoor, interval, last_key, last_json, last_pub_ms, auto, saved_inv
   var disc_on, disc_name, disc_check
-  var baud, fmt, hooks, paused
+  var baud, fmt, hooks, paused, log_raw
 
   def init()
     self.publish = persist.find("bus_publish", false)
+    self.log_raw = persist.find("bus_log", false)
     self.gap = persist.find("bus_gap", 300)
     self.flen = persist.find("bus_len", 0)
     self.interval = persist.find("gree_interval", 10)
@@ -468,6 +471,7 @@ class GreeBus
     tasmota.add_fast_loop(/-> self.loop())
     tasmota.add_driver(self)
     tasmota.add_cmd("BusPublish", /cmd, idx, payload -> self.cmd_publish(payload))
+    tasmota.add_cmd("BusLog", /cmd, idx, payload -> self.cmd_log(payload))
     tasmota.add_cmd("BusGap", /cmd, idx, payload -> self.cmd_gap(payload))
     tasmota.add_cmd("BusLen", /cmd, idx, payload -> self.cmd_len(payload))
     tasmota.add_cmd("GreeInterval", /cmd, idx, payload -> self.cmd_interval(payload))
@@ -608,9 +612,10 @@ class GreeBus
     var now = tasmota.millis()
     for t: self.taps
       for f: t.poll(now, self.gap, self.flen, self.MAX_LEN)
-        var h = GreeBus.hex(f)
         t.count += 1
-        log(string.format("BUS: %s %d bytes: %s", t.name, size(f), h), self.LOG_LEVEL)
+        t.last_frame = f                         # kept as bytes; turned into hex only for the web page
+        var h = (self.log_raw || self.publish) ? GreeBus.hex(f) : nil
+        if self.log_raw log(string.format("BUS: %s %d bytes: %s", t.name, size(f), h), self.LOG_LEVEL) end
         var ok_in = self.indoor.feed(f, now, t.name)     # indoor frames are found on either tap
         var ok_out = self.outdoor.feed(f, now, t.name)   # outdoor replies only appear on the RX tap
         if ok_in || ok_out
@@ -623,7 +628,6 @@ class GreeBus
           mqtt.publish("tele/" + self.topic + "/BUS_" + t.name, payload, false, nil, nil, 3)
           t.last_pub = h
         end
-        t.last_frame = h
         for hk: self.hooks
           try hk(t.name, f, now) except .. as e, m log("BUS: hook error " + str(e) + " " + str(m), 2) end
         end
@@ -710,8 +714,9 @@ class GreeBus
     end
     var ser = (self.baud == self.BAUD && self.fmt == "8E1") ? "" : string.format(", %d %s", self.baud, self.fmt)
     for t: self.taps
+      var lf = (type(t.last_frame) == "instance") ? GreeBus.hex(t.last_frame) : ""
       tasmota.web_send(string.format("{s}Bus %s (%d, %s%s){m}%s{e}", t.name, t.count,
-                                     t.inverted ? "inv" : "norm", ser, t.last_frame))
+                                     t.inverted ? "inv" : "norm", ser, lf))
     end
   end
 
@@ -743,6 +748,18 @@ class GreeBus
     persist.bus_publish = self.publish
     persist.save()
     tasmota.resp_cmnd_str(self.publish ? "ON" : "OFF")
+  end
+
+  def cmd_log(payload)
+    var p = string.toupper(str(payload))
+    if p == "1" || p == "ON"
+      self.log_raw = true
+    elif p == "0" || p == "OFF"
+      self.log_raw = false
+    end
+    persist.bus_log = self.log_raw
+    persist.save()
+    tasmota.resp_cmnd_str(self.log_raw ? "ON" : "OFF")
   end
 
   def cmd_auto(payload)

@@ -8,6 +8,7 @@ MQTT_UP = true
 DEVNAME = "Living room heat pump"
 PUBS = []
 LOGS = []
+WEB = []
 SERIALS = {}
 class serial
   static var SERIAL_8E1 = 0x800001e
@@ -42,7 +43,7 @@ class MockTasmota
   def add_driver(d) self.drivers.push(d) end
   def add_cmd(n, f) self.cmds[n] = f end
   def publish_result(p, sub) PUBS.push([sub, p]) end
-  def web_send(s) print("  web:", s) end
+  def web_send(s) WEB.push(s) print("  web:", s) end
   def resp_cmnd_str(s) self.resp = s end
   def resp_cmnd(s) self.resp = s end
   var appended
@@ -94,6 +95,22 @@ end
 var fails = 0
 var h20a = GreeBus.hex(frame(0x31, 9))
 var h20b = GreeBus.hex(frame(0x80, 9))
+LOGS.clear()
+
+# 0) BusLog off (default): frames are counted and shown on the web page, but nothing is logged
+import persist
+var c0 = gree_bus.taps[1].count
+send_frame(txs, 100, frame(0x31, 9))
+run(800)
+var bus_lines = 0
+for l: LOGS if string.find(l, "BUS: ") == 0 bus_lines += 1 end end
+WEB.clear() gree_bus.web_sensor()
+var page = WEB.concat(" ")
+var ok0 = bus_lines == 0 && gree_bus.taps[1].count == c0 + 1 && string.find(page, h20a) >= 0 && gree_bus.log_raw == false
+print(ok0 ? "PASS" : "FAIL", "BusLog off: frame counted and on the web page, not logged") if !ok0 fails += 1 end
+tasmota.cmds["BusLog"]("BusLog", 0, "1", nil)
+ok0 = tasmota.resp == "ON" && persist.find("bus_log", nil) == true
+print(ok0 ? "PASS" : "FAIL", "BusLog 1 turns raw-frame logging on (saved)") if !ok0 fails += 1 end
 LOGS.clear()
 
 # 1) indoor frame on TX + echo/reply on RX, reply 400 ms after -> split by silence

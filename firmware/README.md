@@ -29,6 +29,7 @@ Also over MQTT as `cmnd/<topic>/<command>`. Values marked "saved" survive a rest
 | `GreeDiscovery 0\|1` | Home Assistant discovery off (removes the entities) / on (default 1, saved). No value = publish again and show the device name and id |
 | `BusAuto 0\|1` | Switch a tap's polarity by itself when bytes arrive but no valid frame decodes for 20 s, and save the polarity that works (default 1, saved). No value = show the status and the current polarities |
 | `BusPublish 0\|1` | Also publish raw frames to `tele/<topic>/BUS_RX` and `BUS_TX` (default 0, saved) |
+| `BusLog 0\|1` | Write every raw frame to the console (`BUS: RX 9 bytes: ...`), only while you need it (default 0, saved) |
 | `BusGap <ms>` | Silence that ends a raw frame (default 300, saved) |
 | `BusLen <n>` | Fixed raw frame length, 0 = split on silence (default 0, saved) |
 | `BusSerial <baud>,<format>` | Serial settings of both taps, e.g. `BusSerial 600,8E1` (default, saved). For other units; `BusDetect apply` sets it |
@@ -48,7 +49,7 @@ Also over MQTT as `cmnd/<topic>/<command>`. Values marked "saved" survive a rest
 
 Captures go to `/gree_capture.txt` (the previous one to `/gree_capture_prev.txt`), one line per event: `<ms> RX|TX|IR|IRHVAC|GREE|MARK <data>`, comments start with `#`. Every line is also printed in the console (`CAP: ...`). Format and how to use them: [docs/adapting.md](../docs/adapting.md).
 
-Raw frames are written to the log at level 3: `Weblog 3` shows them in the web console (`Weblog 2` to go back).
+Raw frames are not logged by default: with `BusLog 0` the script does no work per frame beyond decoding it, and the main page still shows the last frame of each tap. `BusLog 1` writes every frame to the console (INFO level), `BusLog 0` stops it. Captures (`GreeCapture`) record frames only while they run.
 
 ## MQTT output
 
