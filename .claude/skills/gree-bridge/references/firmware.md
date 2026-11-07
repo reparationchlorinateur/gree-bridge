@@ -16,7 +16,6 @@ Step-by-step setup: [docs/install.md](../docs/install.md).
 | [`tasmota/gree_bus.be`](tasmota/gree_bus.be) | Bus decoder for three Gree bus variants (600 baud 9/11-byte frames, 1200 baud 20-byte frames, 600 baud 20/29-byte frames): indoor frames and outdoor replies on both taps, main-page rows, MQTT `tele/<topic>/GREE`, Home Assistant discovery, polarity auto-detect |
 | [`tasmota/gree_matter.be`](tasmota/gree_matter.be) | Apple Home (Matter) glue: keeps Tasmota's Matter thermostat (v.HVAC) in line with the bus and the last IR command. Idle until Matter is turned on |
 | [`tasmota/gree_tools.be`](tasmota/gree_tools.be) | Optional "Gree tools" page: IR brand detection, bus speed / format / polarity detection, captures for decoding other units ([docs/adapting.md](../docs/adapting.md)) |
-| [`tasmota/slot_bus.be`](tasmota/slot_bus.be) | Experimental, loaded by hand: reader for buses that send one bit per mains cycle (older Toshiba / Carrier). Not reliable yet on the board (the fast loop is too slow to catch every pulse) |
 | [`tasmota/autoexec.be`](tasmota/autoexec.be) | Loads the scripts at boot (`gree_tools.be` only if it is on the board) |
 | [`tasmota/template.json`](tasmota/template.json) | GPIO template |
 | [`tests/`](tests/) | Host tests for both scripts, with mocks of the Tasmota API |
@@ -91,7 +90,7 @@ berry -s test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold l
 berry -s test_gree_tools.be        # 52 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
                                    #           IR brand, captures (single, sequence, start-up), web page
 berry -s test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
-berry -s test_slot_bus.be          #  4 tests: slot_bus.be on a simulated mains-synchronous line
 ```
 
 `test_gree_bus.be` also replays real captured frames. The mocks are `persist.be`, `mqtt.be`, `gpio.be` (pin levels from a simulated line), `path.be` and `webserver.be`.
+
