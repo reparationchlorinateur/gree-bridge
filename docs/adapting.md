@@ -36,7 +36,7 @@ Switch the unit on, then on the Gree tools page press **Detect speed and format*
 - **speed** from the pulse widths (300 to 19200 baud; a non-standard speed shows as "about N baud"),
 - **format** by decoding the bytes with each common format (8E1, 8N1, 7E1, ...) and keeping the one without framing or parity errors.
 
-The result shows the bytes it decoded, the bytes per burst (for example `[9, 11]`: a 9-byte frame and an 11-byte reply), the gaps between bursts in ms (on GWH12KF the reply follows about 50 ms after the frame), and how many valid Gree frames it found. **Use the detected settings** applies them (`BusSerial` and the polarity of each tap); when they are not Gree's 600 8E1, `BusAuto` is turned off, because it looks for Gree frames and would keep flipping the polarity.
+The result shows the bytes it decoded, the bytes per burst (for example `[9, 11]`: a 9-byte frame and an 11-byte reply), the gaps between bursts in ms (on GWH12KF the reply follows about 50 ms after the frame), and how many valid Gree frames it found. **Use the detected settings** applies them (`BusSerial` and the polarity of each tap); when they are not one of the two Gree buses the decoder knows (600 8E1, and 1200 8E1 for newer units such as the Willis MGW12KCH15S), `BusAuto` is turned off, because it looks for Gree frames and would keep flipping the polarity. A 1200 8E1 result with "Gree frames" counted is the newer Gree bus: the decoder reads it as soon as the settings are applied ([protocol.md](protocol.md#protocol-b-newer-gree-units-1200-baud)).
 
 "No activity": the unit may be in standby (the indoor unit stops talking some time after it is switched off), or the tap is not on the right node.
 
@@ -44,7 +44,7 @@ The result shows the bytes it decoded, the bytes per burst (for example `[9, 11]
 
 A capture records, with millisecond times: the raw bytes from both taps, every IR command (wall remote, with raw timings, and the ones the board sends), the decoded Gree values when there are any, and your notes. It goes to `/gree_capture.txt` on the board (the previous one is kept as `/gree_capture_prev.txt`), is printed live in the console, and can be downloaded from the Gree tools page.
 
-Short captures are enough, because the unit repeats its state every second. A real example from the GWH12KF: [captures/gwh12kf_startup_heat.txt](captures/gwh12kf_startup_heat.txt) (see [protocol.md](protocol.md), "A real start-up"). A good set for a new unit:
+Short captures are enough, because the unit repeats its state every second. Real examples: [captures/gwh12kf_startup_heat.txt](captures/gwh12kf_startup_heat.txt) from the GWH12KF and [captures/protocol_b_startup_heat.txt](captures/protocol_b_startup_heat.txt) from a newer Gree unit (see [protocol.md](protocol.md), "A real start-up"). A good set for a new unit:
 
 1. **Start-up sequence**: unit off for 3 minutes (the compressor waits that long before it may restart), press **Start-up sequence** (`GreeCapture startup`), then switch the unit on with the remote in a mode where the compressor will start: **Cool** with the setpoint well below the room temperature, or, when it is cold outside, **Heat** with the setpoint well above it. The capture keeps the 3 s before the command, records 5 s after it, then 5 s again 1, 2 and 3 minutes later (fan start, compressor start and ramp-up).
 2. **One change at a time**, each with **Capture 5 s now** (`GreeCapture 5`) started just before the change: setpoint +1 °C, then +1 again; each mode (Cool, Heat, Dry, Fan, Auto); each fan speed; off.
@@ -74,7 +74,7 @@ python3 .claude/skills/gree-bridge/scripts/analyze_capture.py startup-cool.txt s
 
 In short captures a slowly changing temperature can look as if a command changed it; check the timeline and repeat the command once before trusting a field.
 
-Then a decoder is written for the new layout, in the style of `GreeIndoor` / `GreeOutdoor` in `gree_bus.be` (a class with `feed(frame)` that checks the checksum and fills the fields, plus the Home Assistant discovery list).
+Then a decoder is written for the new layout, in the style of `GreeIndoor` / `GreeOutdoor` in `gree_bus.be` (a class with `feed(frame)` that checks the checksum and fills the fields, plus the Home Assistant discovery list). The newer Gree bus was added this way: `gree_scan_sum()` finds its 20-byte frames (sum checksum) and `decode_b()` fills the same fields as the original decoder, so the Home Assistant package and Apple Home needed no change. The analysis script recognises both Gree layouts.
 
 ## Decoding with Claude
 

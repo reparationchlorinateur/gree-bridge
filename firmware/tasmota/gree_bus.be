@@ -23,7 +23,7 @@
   and at least once a minute), also shown on the main page:
     {"Gree":{"Room":20.5,"Coil":7.9,"CoilRaw":79,"Power":"ON","Mode":"cool",
              "Setpoint":22,"Fan":3,"Link":"OK"}}
-    Room      indoor unit's own room sensor, 0.5 C steps (reads 1 C lower in heat mode)
+    Room      indoor unit's own room sensor, 0.5 C steps (reads 1 C lower in heat mode); whole C on protocol B
     Coil      indoor coil (tube) temperature, from the raw NTC reading (CoilRaw)
     Fan       ACTUAL indoor fan speed 0 = stopped, 1 low, 2 medium, 3 high
     Link      OK while valid frames arrive; after 10 s without one: STANDBY if the unit was OFF
@@ -39,7 +39,7 @@
     CompA     compressor current A (o7 x 0.05, from two clamp-meter readings)
     PowerW    estimated outdoor-unit input power W = 240 V x 0.95 x (CompA + 0.2 A fan/board), 0 when stopped
     LoadRaw   o7 raw
-    Out       all outdoor bytes o1..o8 as raw numbers
+    Out       all outdoor bytes o1..o8 as raw numbers (protocol B: b3..b18)
     DischC    compressor discharge temperature C (o5, curve fitted on one cold reference point)
     OutLink   OK / STANDBY / LOST for the outdoor replies (same rule, using the outdoor mode).
               While not OK the outdoor temperatures and raw bytes are null; CompHz, CompA and PowerW
@@ -59,8 +59,13 @@
                      for 20 s, and save the polarity that works (default 1, saved); a silent bus
                      (unit in standby) never triggers a switch; no value = show status
     BusSerial <baud>,<format>  serial settings of both taps, e.g. BusSerial 600,8E1 (default, saved);
-                     for other units, found with BusDetect (gree_tools.be)
+                     BusSerial 1200,8E1 for protocol B units; for others, found with BusDetect (gree_tools.be)
   Raw frames are not logged unless BusLog is on; the main page always shows the last frame of each tap.
+
+  Two bus protocols are decoded, whichever arrives (set the serial speed with BusSerial / BusDetect):
+    A  600 baud 8E1, 9- and 11-byte frames, XOR checksum (GWH12KF, below)
+    B  1200 baud 8E1, 20-byte frames, sum checksum (newer Gree units, see "Protocol B" below)
+  Both give the same JSON fields, so the Home Assistant package and Apple Home work unchanged.
 
   Indoor frame, measured on GWH12KF (2026-10-07): 600 baud 8E1 (one idle bit between bytes),
   9 bytes every 1.0 s:  07 b1 b2 b3 00 b5 b6 ck 0D   with ck = b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6
@@ -73,6 +78,19 @@
   Why BusGap 300 ms: TasmotaSerial hands over received bytes in blocks of 10 at baud rates
   <= 9600, i.e. every ~200 ms at 600 baud, so a shorter gap could cut frames in pieces.
   Use "Sleep 10" so the loop runs often enough (see README).
+
+  Protocol B, measured on a second Gree unit (2026-11-07): 1200 baud 8E1, groups of four 20-byte
+  frames about every 1.1 s:   h b1 00 b3 .. b18 ck   with ck = (h + b1 + .. + b18) & 0xFF,
+  h = 31 (main frame) or 32, b1 = 20 from the indoor unit, 10 from the outdoor unit.
+  Temperatures are whole degrees C + 40.  Indoor 31 20:
+    b3  bit 4 power, bits 0-2 mode (1 cool 2 dry 3 fan 4 heat), 00 when off
+    b4  actual indoor fan 1 low .. 3 high, 0 or 80 = stopped     b6 setpoint + 40 (always 25 when off)
+    b7  room + 40                                                b9 indoor coil + 40
+  Outdoor 31 10:
+    b3  bit 4 compressor running, bits 0-2 mode (0 off)          b4 compressor frequency Hz
+    b7  compressor current, 0.1 A per count (assumed, not yet checked with a clamp meter)
+    b12 outdoor air + 40    b13 outdoor coil + 40    b14 discharge + 40 (all three still to be confirmed)
+  The 32 10 / 32 20 frames are checked and skipped. Not mapped yet: indoor b5, b10, b12; outdoor b10, b17.
 -#
 
 import string
@@ -185,15 +203,47 @@ def gree_scan(pending, tap, chunk, head, n, tail)
   return out
 end
 
-# Decoder for the indoor unit's 9-byte frame:  07 b1 b2 b3 b4 b5 b6 ck 0D
+# Protocol B (1200 baud): valid 20-byte frames  h b1 00 .. ck,  h = 31 or 32, b1 = 10 or 20,
+# ck = sum of bytes 0 .. 18 & 0xFF. Returns the 31 frames whose b1 is the one asked for; the others
+# are skipped whole so the scan stays aligned. pending as in gree_scan (use another key than gree_scan's).
+def gree_scan_sum(pending, key, chunk, b1)
+  var n = 20
+  var b = pending.find(key, bytes()) + chunk
+  var out = []
+  var used = 0
+  var i = 0
+  while i + n <= size(b)
+    var h = b[i]
+    var ok = (h == 0x31 || h == 0x32) && (b[i + 1] == 0x10 || b[i + 1] == 0x20) && b[i + 2] == 0
+    if ok
+      var x = 0
+      for k: 0 .. n - 2 x += b[i + k] end
+      ok = ((x & 0xFF) == b[i + n - 1])
+    end
+    if ok
+      if h == 0x31 && b[i + 1] == b1 out.push(b[i .. i + n - 1]) end
+      i += n
+      used = i
+    else
+      i += 1
+    end
+  end
+  var keep = size(b) - (n - 1)
+  if keep < used keep = used end
+  pending[key] = (keep < size(b)) ? b[keep ..] : bytes()
+  return out
+end
+
+# Decoder for the indoor unit's 9-byte frame:  07 b1 b2 b3 b4 b5 b6 ck 0D  (and protocol B's 31 20 frame)
 class GreeIndoor
   static var MODES = ["auto", "cool", "dry", "fan_only", "heat"]
-  var room, coil, coil_raw, power, mode, setpoint, fan, last_ok, frames, pending
+  var room, coil, coil_raw, power, mode, setpoint, fan, last_ok, frames, pending, proto
 
   def init()
     self.last_ok = nil
     self.frames = 0
     self.pending = {}
+    self.proto = nil                              # "A" (600 baud) or "B" (1200 baud) once decoded
   end
 
   # 20k NTC (B = 3950) on a 20k divider read as 8 bits (114 = 20 C on this unit, unit off for hours)
@@ -206,7 +256,9 @@ class GreeIndoor
   def feed(chunk, now, tap)
     var fr = gree_scan(self.pending, tap, chunk, 0x07, 9, 0x0D)
     for f: fr self.decode(f, 0, now) end
-    return size(fr) > 0
+    var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x20)
+    for f: fb self.decode_b(f, now) end
+    return size(fr) + size(fb) > 0
   end
 
   def decode(b, i, now)
@@ -218,6 +270,26 @@ class GreeIndoor
     self.mode = (m < size(GreeIndoor.MODES)) ? GreeIndoor.MODES[m] : str(m)
     self.setpoint = 16 + (b[i + 6] & 0x0F)
     self.fan = (b[i + 6] >> 4) & 0x03
+    self.proto = "A"
+    self.last_ok = now
+    self.frames += 1
+  end
+
+  # Protocol B indoor frame 31 20 00 b3 .. b18 ck (whole degrees, + 40)
+  def decode_b(b, now)
+    self.room = b[7] - 40.0
+    self.coil_raw = b[9]
+    self.coil = b[9] - 40.0
+    self.power = (b[3] & 0x10) != 0
+    var m = b[3] & 0x07
+    if self.power || m != 0 || self.mode == nil   # off frames carry no mode: the last one is kept
+      self.mode = (m < size(GreeIndoor.MODES)) ? GreeIndoor.MODES[m] : str(m)
+    end
+    if self.power || self.setpoint == nil         # off frames always read 25: the last setpoint is kept
+      self.setpoint = b[6] - 40
+    end
+    self.fan = ((b[4] & 0x80) != 0) ? 0 : (b[4] & 0x7F)
+    self.proto = "B"
     self.last_ok = now
     self.frames += 1
   end
@@ -267,6 +339,7 @@ end
 #   o5 discharge temperature (EXHAUST sensor), own NTC curve, see DISCH_K
 #   o6 outdoor air, same NTC curve                            o7 compressor current, 0.05 A per count
 #   o8 running mode 0 off, 1 cool, 4 heat (2 dry / 3 fan assumed, same codes as the indoor frame)
+# Protocol B: the 31 10 frame (see the top of the file); raw then holds its bytes b3 .. b18.
 class GreeOutdoor
   static var MODES = ["off", "cool", "dry", "fan_only", "heat"]
   # o7 scale from two clamp-meter readings on the outdoor supply (240 V, 2026-10-07):
@@ -278,26 +351,30 @@ class GreeOutdoor
   # o5 discharge sensor: different NTC/divider than the 20k sensors. Fitted on o5 = 41 at 13.6 C
   # (unit off for 6 h, pipe at outdoor temperature, 2026-10-08), NTC B = 3950 assumed.
   static var DISCH_K = 0.3229
-  var raw, last_ok, frames, pending
+  static var B_AMPS_PER_COUNT = 0.1   # protocol B b7, assumed (2.4 A at 60 Hz heating looks right)
+  # decoded values, the same for both protocols: compressor Hz, mode code, load (current) count,
+  # current A, discharge raw, and the three temperatures already formatted ("12.5" or "null")
+  var raw, last_ok, frames, pending, proto, hz, mode_i, load, amps, disch_raw, coil_s, air_s, disch_s
 
   def init()
     self.last_ok = nil
     self.frames = 0
     self.pending = {}
+    self.proto = nil
   end
 
   def mode()
-    var m = self.raw[7]
+    var m = self.mode_i
     return (m < size(GreeOutdoor.MODES)) ? GreeOutdoor.MODES[m] : str(m)
   end
 
   def comp_amps()
-    return self.raw[6] * GreeOutdoor.AMPS_PER_COUNT
+    return self.amps
   end
 
   # Estimated outdoor-unit input power (W): 0 while the compressor is stopped
   def power_w()
-    if self.raw[0] == 0 && self.raw[6] == 0 return 0 end
+    if self.hz == 0 && self.load == 0 return 0 end
     return int(GreeOutdoor.VOLTS * GreeOutdoor.POWER_FACTOR * (self.comp_amps() + GreeOutdoor.AUX_AMPS) + 0.5)
   end
 
@@ -315,19 +392,51 @@ class GreeOutdoor
   # Fields that should be published immediately when they change: compressor on/off and mode
   def state_key(now)
     if self.last_ok == nil return "NONE" end
-    return string.format("%s|%s|%s", self.link(now), self.raw[0] > 0 ? "run" : "stop", self.mode())
+    return string.format("%s|%s|%s", self.link(now), self.hz > 0 ? "run" : "stop", self.mode())
   end
 
   def feed(chunk, now, tap)
     var fr = gree_scan(self.pending, tap, chunk, 0x08, 11, 0x0F)
-    for f: fr
-      var v = []
-      for k: 1 .. 8 v.push(f[k]) end
-      self.raw = v
-      self.last_ok = now
-      self.frames += 1
-    end
-    return size(fr) > 0
+    for f: fr self.decode_a(f, now) end
+    var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x10)
+    for f: fb self.decode_b(f, now) end
+    return size(fr) + size(fb) > 0
+  end
+
+  # 08 o1 .. o8 ck 0F
+  def decode_a(f, now)
+    var v = []
+    for k: 1 .. 8 v.push(f[k]) end
+    self.raw = v
+    self.proto = "A"
+    self.hz = v[0]
+    self.mode_i = v[7]
+    self.load = v[6]
+    self.amps = v[6] * GreeOutdoor.AMPS_PER_COUNT
+    self.disch_raw = v[4]
+    self.coil_s = GreeOutdoor.temp_str(v[3])
+    self.air_s = GreeOutdoor.temp_str(v[5])
+    self.disch_s = GreeOutdoor.disch_str(v[4])
+    self.last_ok = now
+    self.frames += 1
+  end
+
+  # Protocol B 31 10 00 b3 .. b18 ck (temperatures whole degrees + 40)
+  def decode_b(f, now)
+    var v = []
+    for k: 3 .. 18 v.push(f[k]) end
+    self.raw = v
+    self.proto = "B"
+    self.hz = f[4]
+    self.mode_i = f[3] & 0x07
+    self.load = f[7]
+    self.amps = f[7] * GreeOutdoor.B_AMPS_PER_COUNT
+    self.disch_raw = f[14]
+    self.air_s = string.format("%.1f", f[12] - 40.0)
+    self.coil_s = string.format("%.1f", f[13] - 40.0)
+    self.disch_s = string.format("%.1f", f[14] - 40.0)
+    self.last_ok = now
+    self.frames += 1
   end
 
   def link_ok(now)
@@ -339,7 +448,7 @@ class GreeOutdoor
   def link(now)
     if self.last_ok == nil return "NONE" end
     if self.link_ok(now) return "OK" end
-    return (self.raw[7] == 0) ? "STANDBY" : "LOST"
+    return (self.mode_i == 0) ? "STANDBY" : "LOST"
   end
 
   # ',"CompHz":..,"OutCoil":..,"OutAir":..,"OutMode":..,"DischRaw":..,"LoadRaw":..,"Out":[...],"OutLink":"OK"'
@@ -357,8 +466,8 @@ class GreeOutdoor
     var s = []
     for v: o s.push(str(v)) end
     return string.format(',"CompHz":%d,"CompA":%.2f,"PowerW":%d,"OutCoil":%s,"OutAir":%s,"DischC":%s,"OutMode":"%s","DischRaw":%d,"LoadRaw":%d,"Out":[%s],"OutLink":"%s"',
-                         o[0], self.comp_amps(), self.power_w(), GreeOutdoor.temp_str(o[3]), GreeOutdoor.temp_str(o[5]),
-                         GreeOutdoor.disch_str(o[4]), self.mode(), o[4], o[6], s.concat(","), link)
+                         self.hz, self.comp_amps(), self.power_w(), self.coil_s, self.air_s,
+                         self.disch_s, self.mode(), self.disch_raw, self.load, s.concat(","), link)
   end
 end
 
@@ -381,7 +490,7 @@ class GreeBus
   static var MAX_LEN     = 80      # keeps the HA state under its 255-character limit
   static var HEARTBEAT   = 60      # republish decoded values at least this often (s)
   # -----------------------------------------------------------
-  static var VERSION     = "2026-10-20 rev B"
+  static var VERSION     = "2026-11-07 rev B"
   # Home Assistant entities: component, object id, name, value template, extra discovery keys
   static var HA = [
     ["sensor", "room_temperature", "Room temperature (unit)", "{{ value_json.Gree.Room }}",
@@ -698,16 +807,16 @@ class GreeBus
       tasmota.web_send(string.format("{s}Gree coil{m}%s &deg;C (raw %d){e}", coil, d.coil_raw))
       tasmota.web_send(string.format("{s}Gree state{m}%s %s %d &deg;C{e}", d.power ? "ON" : "OFF", d.mode, d.setpoint))
       tasmota.web_send(string.format("{s}Gree indoor fan{m}%d{e}", d.fan))
-      tasmota.web_send(string.format("{s}Gree link{m}%s (%d frames){e}", d.link(now), d.frames))
+      tasmota.web_send(string.format("{s}Gree link{m}%s (%d frames, protocol %s){e}", d.link(now), d.frames, d.proto))
     else
       tasmota.web_send("{s}Gree link{m}no valid frame yet{e}")
     end
     var o = self.outdoor
     if o.last_ok != nil
       var r = o.raw
-      tasmota.web_send(string.format("{s}Gree compressor{m}%d Hz, %s, %.2f A, ~%d W{e}", r[0], o.mode(), o.comp_amps(), o.power_w()))
+      tasmota.web_send(string.format("{s}Gree compressor{m}%d Hz, %s, %.2f A, ~%d W{e}", o.hz, o.mode(), o.comp_amps(), o.power_w()))
       tasmota.web_send(string.format("{s}Gree outdoor air / coil / discharge{m}%s / %s / %s &deg;C{e}",
-                                     GreeOutdoor.temp_str(r[5]), GreeOutdoor.temp_str(r[3]), GreeOutdoor.disch_str(r[4])))
+                                     o.air_s, o.coil_s, o.disch_s))
       var s = []
       for v: r s.push(string.format("%d", v)) end
       tasmota.web_send(string.format("{s}Gree outdoor raw (%s){m}%s{e}", o.link(now), s.concat(" ")))

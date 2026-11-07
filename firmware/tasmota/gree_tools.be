@@ -10,7 +10,7 @@
     BusDetect          measures the speed, format and polarity of both bus taps (about 5 s; the bus
                        decoder is paused meanwhile). Result in the console and on the page.
     BusDetect apply    uses the detected settings (BusSerial + polarity); turns BusAuto off when they
-                       are not the Gree 600 8E1 ones
+                       are not one of the two Gree buses gree_bus.be decodes (600 8E1, 1200 8E1)
     GreeCapture <s>                one capture of <s> seconds now (default 5)
     GreeCapture <s>,<every>,<n>    n captures of <s> seconds, one every <every> seconds
     GreeCapture startup            waits for the next IR command (wall remote or Home Assistant /
@@ -219,9 +219,19 @@ class GreeDetect
     return p.concat(" ")
   end
 
-  # Count valid Gree frames (indoor 07 .. 0D, 9 bytes; outdoor 08 .. 0F, 11 bytes; XOR checksum)
+  # Count valid Gree frames: protocol A (indoor 07 .. 0D, 9 bytes; outdoor 08 .. 0F, 11 bytes; XOR
+  # checksum) and protocol B (31|32 10|20 00 .., 20 bytes, last byte = sum of the others)
   static def gree_frames(b)
     var n = 0
+    var i = 0
+    while i + 20 <= size(b)
+      if (b[i] == 0x31 || b[i] == 0x32) && (b[i + 1] == 0x10 || b[i + 1] == 0x20) && b[i + 2] == 0
+        var x = 0
+        for k: 0 .. 18 x += b[i + k] end
+        if (x & 0xFF) == b[i + 19] n += 1 i += 20 continue end
+      end
+      i += 1
+    end
     for f: [[0x07, 9, 0x0D], [0x08, 11, 0x0F]]
       var i = 0
       while i + f[1] <= size(b)
@@ -311,7 +321,7 @@ end
 
 # ---------------------------------------------------------------------------------------------------
 class GreeTools
-  static var VERSION = "2026-10-18b"
+  static var VERSION = "2026-11-07"
   static var CAP_FILE = "/gree_capture.txt"
   static var PREV_FILE = "/gree_capture_prev.txt"
   static var MAX_BYTES = 200000
@@ -471,7 +481,7 @@ class GreeTools
     var b = GreeTools.bus()
     if d == nil || b == nil return false end
     b.set_serial(d[0], d[1], d[2])
-    if d[0] != b.BAUD || d[1] != "8E1"
+    if (d[0] != 600 && d[0] != 1200) || d[1] != "8E1"
       b.auto = false                    # BusAuto looks for Gree frames: it would keep flipping
       persist.bus_auto = false
       persist.save()

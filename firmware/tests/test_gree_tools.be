@@ -159,6 +159,13 @@ var f31 = bytes("3104141C2A0000000000E1")
 r = det(wave([[20000, f31], [140000, bytes("3203001E0B0A08000077")]], 1200, "8E1", 1, 0, 600000, 4))
 show(r)
 check("1200 baud 8E1 (no checksum knowledge needed)", r["baud"] == 1200 && r["fmt"] == "8E1" && r["errors"] == 0 && r["gree"] == 0)
+# protocol B frames from a real unit (1200 8E1, 20 bytes, sum checksum): counted as Gree frames
+var pb_in = bytes("312000148008" "3E3B003C070000000000000000A9")
+var pb_out = bytes("31100014210000" "0A00004F0034324E0000020085")
+r = det(wave([[20000, pb_in], [300000, pb_out]], 1200, "8E1", 1, 0, 800000, 4))
+show(r)
+check("protocol B: 1200 8E1, both 20-byte frames counted", r["baud"] == 1200 && r["fmt"] == "8E1" && r["errors"] == 0 &&
+      r["gree"] == 2 && string.find(GreeDetect.summary("TX", r), "2 Gree frames") > 0)
 
 var txt = bytes()
 for k: 0 .. 39 txt.add((k * 37 + 11) % 256) end
@@ -227,8 +234,17 @@ MOCK_T = 0
 tasmota.cmds["BusDetect"]("BusDetect", 0, "", nil)
 NOW += 1000 tasmota.run_timers() NOW += 1000 tasmota.run_timers()
 tasmota.cmds["BusDetect"]("BusDetect", 0, "apply", nil)
-check("apply 1200 8E1 turns BusAuto off", gree_bus.serial_set[0] == 1200 && gree_bus.auto == false &&
-      persist.find("bus_auto", nil) == false)
+check("apply 1200 8E1 (protocol B) keeps BusAuto on", gree_bus.serial_set[0] == 1200 && gree_bus.auto == true)
+var f2400 = []
+for k: 0 .. 3 f2400.push([200000 + k * 1000000, f31]) end
+WAVES[6] = wave(f2400, 2400, "8N1", 1, 0, 4000000, 0)
+WAVES[7] = wave(f2400, 2400, "8N1", 1, 0, 4000000, 0)
+MOCK_T = 0
+tasmota.cmds["BusDetect"]("BusDetect", 0, "", nil)
+NOW += 1000 tasmota.run_timers() NOW += 1000 tasmota.run_timers()
+tasmota.cmds["BusDetect"]("BusDetect", 0, "apply", nil)
+check("apply 2400 8N1 (unknown bus) turns BusAuto off", gree_bus.serial_set[0] == 2400 && gree_bus.serial_set[1] == "8N1" &&
+      gree_bus.auto == false && persist.find("bus_auto", nil) == false)
 gree_bus.auto = true  gree_bus.baud = 600  gree_bus.fmt = "8E1"  gree_bus.taps[0].inverted = true  gree_bus.taps[1].inverted = false
 
 # ---------------- IR brand ----------------
@@ -361,7 +377,7 @@ WEB_ROUTES["/gt1"]()
 var page = WEB.concat("\n")
 check("page renders: IR, bus result, apply button, capture buttons, download links",
       string.find(page, "<start Gree tools>") == 0 && string.find(page, "<p>GREE (") > 0 &&
-      string.find(page, "Matches this board") > 0 && string.find(page, "RX: 1200 baud") > 0 &&
+      string.find(page, "Matches this board") > 0 && string.find(page, "RX: 2400 baud") > 0 &&
       string.find(page, "Use the detected settings") > 0 && string.find(page, "Capture 5 s now") > 0 &&
       string.find(page, "download=./tmp_capture.txt") > 0 && string.find(page, "<stop>") > 0)
 WEB.clear()

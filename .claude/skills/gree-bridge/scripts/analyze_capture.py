@@ -76,9 +76,18 @@ def xor(bs):
     return x
 
 GREE_LAYOUTS = [(0x07, 9, 0x0D, "indoor"), (0x08, 11, 0x0F, "outdoor")]
+# Protocol B (newer Gree units, 1200 baud): 20 bytes  31|32  20|10  00 ..  ck = sum of bytes 0-18 & 0xFF
+B_NAMES = {(0x31, 0x20): "B indoor", (0x31, 0x10): "B outdoor", (0x32, 0x20): "B indoor2", (0x32, 0x10): "B outdoor2"}
+
+def gree_b_at(chunk, i):
+    if i + 20 <= len(chunk) and (chunk[i], chunk[i + 1]) in B_NAMES and chunk[i + 2] == 0 and \
+       sum(chunk[i:i + 19]) & 0xFF == chunk[i + 19]:
+        return (B_NAMES[(chunk[i], chunk[i + 1])], chunk[i:i + 20])
+    return None
 
 def split_gree(chunk):
-    """Valid Gree frames (head, length, tail, XOR of the bytes between head and checksum)."""
+    """Valid Gree frames: protocol A (head, length, tail, XOR of the bytes between head and checksum)
+    and protocol B (20 bytes, sum checksum)."""
     out, i = [], 0
     while i < len(chunk):
         hit = None
@@ -87,6 +96,8 @@ def split_gree(chunk):
                xor(chunk[i + 1:i + n - 2]) == chunk[i + n - 2]:
                 hit = (name, chunk[i:i + n])
                 break
+        if not hit:
+            hit = gree_b_at(chunk, i)
         if hit:
             out.append(hit)
             i += len(hit[1])
@@ -331,6 +342,15 @@ def timeline(cap, frames, events_list, near_ms=4000, ck=None):
 MODES = {0: "auto", 1: "cool", 2: "dry", 3: "fan", 4: "heat"}
 
 def gree_decode(name, b):
+    if name == "B indoor":       # as gree_bus.be decodes it; temperatures whole C + 40
+        return {"room_C": b[7] - 40, "coil_C": b[9] - 40, "power": bool(b[3] & 0x10), "mode": MODES.get(b[3] & 7, b[3] & 7),
+                "fan_actual": 0 if b[4] & 0x80 else b[4] & 0x7F, "setpoint_C": b[6] - 40, "b5": b[5], "b10": b[10], "b12": b[12]}
+    if name == "B outdoor":
+        return {"comp_Hz": b[4], "running": bool(b[3] & 0x10), "mode": {0: "off", 1: "cool", 2: "dry", 3: "fan", 4: "heat"}.get(b[3] & 7, b[3] & 7),
+                "comp_A_assumed": round(b[7] * 0.1, 1), "out_air_C": b[12] - 40, "out_coil_C": b[13] - 40,
+                "discharge_C": b[14] - 40, "b10": b[10], "b17": b[17]}
+    if name in ("B indoor2", "B outdoor2"):
+        return {"bytes": b.hex(" ").upper()}
     if name == "indoor":
         return {"room_C": b[1] + (0.5 if b[5] & 0x80 else 0), "coil_C": round(ntc_c(b[2]) or 0, 1),
                 "power": bool(b[3] & 8), "mode": MODES.get(b[3] & 7, b[3] & 7),

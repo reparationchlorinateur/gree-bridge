@@ -4,6 +4,8 @@
 
 What was measured on a Gree **GWH12KF** (inverter mini-split, R410A, about 2013) with indoor main board **GRJ819-A3** (label 301484411), with a logic analyzer and then live from the bridge. This is what `firmware/tasmota/gree_bus.be` decodes. Other Gree units of the same era probably use the same bus, but nothing here is official: it comes from captures, and a few fields are still guesses (marked).
 
+A second, newer Gree bus ("protocol B": 1200 baud, 20-byte frames, sum checksum) was found on a Gree-built **Willis MGW12KCH15S/I** (2015) and is decoded too: see [Protocol B](#protocol-b-newer-gree-units-1200-baud) below. `gree_bus.be` decodes whichever of the two arrives, into the same fields.
+
 ## The indoor board
 
 - No Wi-Fi module or wired-controller header on this board, so no UART port to plug into: the bridge listens to the indoor/outdoor bus instead.
@@ -105,6 +107,68 @@ Example, heating at 28 °C: indoor `07 15 9A 0C 00 03 BC 3C 0D` (room 21.0, coil
 - the outdoor coil drops from 13 °C to about −2 °C (evaporator), the discharge temperature rises, the compressor current settles around 2 to 2.5 A.
 
 Still open: the scale of o5 at high temperatures (needs a thermometer on the discharge pipe), o3 fault codes, the codes for dry, fan and auto in o8, defrost behaviour.
+
+## Protocol B: newer Gree units (1200 baud)
+
+Measured on two **Willis MGW12KCH15S/I** indoor units (made by Gree, 12,000 BTU/h inverter, 208/230 V, built 2015-04; [rating label](images/willis_mgw12kch15s_label.jpg)), indoor board label **30148875** (M836F2UBJ, V1.3), November 2026, with the bridge's own captures (`BusDetect`, `GreeCapture startup`) and commands from Home Assistant. Same IR protocol as the GWH12KF (`GREE`), different bus.
+
+![Bus taps on the Willis MGW12KCH15S indoor board](images/willis_mgw12kch15s_board_taps.jpg)
+
+Tap points on this board: the two bus optocouplers below the `COM-OUT` terminal, **U9** (Toshiba TLP785) and **U8** (Sharp PC817), pins 2 and 4 as wired on these units (green and blue wires in the photo). As on GRJ819-A3, one opto drives the loop (TX tap: indoor frames only) and the other receives it (RX tap: every frame on the loop). Measure on your own board before soldering ([finding the tap points](#finding-the-tap-points-on-another-board)): the photo shows where they went on this unit, not a checked pinout. The main page tells the taps apart: only the RX tap shows `31 10` (outdoor) frames.
+
+### Line format
+
+**1200 baud, 8E1** (BusDetect: 0 errors on both taps). RX tap inverted, TX tap normal, as on GWH12KF, so `BusAuto`'s starting values fit. Set the speed with `BusSerial 1200,8E1` or the Gree tools page (**Detect speed and format**, then **Use the detected settings**).
+
+About every 1.1 s the loop carries a group of four 20-byte frames:
+
+```
+31 10 00 b3 .. b18 ck     outdoor unit, main frame
+31 20 00 b3 .. b18 ck     indoor unit, main frame
+32 10 00 .. ck            outdoor unit, second frame
+32 20 00 .. ck            indoor unit, second frame
+ck = (b0 + b1 + ... + b18) & 0xFF
+```
+
+The TX tap sees `31 20` and `32 20` about 0.55 s apart; the RX tap sees all four back to back. **Temperatures are whole degrees C + 40** (0x3B = 19 °C), so there is no thermistor curve to fit: room, coil, outdoor air, outdoor coil and discharge are all read directly.
+
+### Indoor frame `31 20`
+
+| Byte | Meaning | Confidence |
+|---|---|---|
+| b3 | **power + mode**: bit 4 = on, bits 0-2 mode (1 cool, 2 dry, 3 fan, 4 heat). `00` when off (no mode: the decoder keeps the last one) | confirmed with commands |
+| b4 | **actual indoor fan**: 1 low, 2 medium, 3 high; `00` or `80` = stopped (in heat the fan waits until the coil is warm, as on GWH12KF) | confirmed for 0-3 |
+| b5 | flags, `08` / `28` alternating | unknown |
+| b6 | **setpoint** + 40. Always 25 °C (`41`) while off: the decoder keeps the last setpoint seen while on | confirmed |
+| b7 | **room temperature** + 40 (whole degrees) | confirmed |
+| b9 | **indoor coil temperature** + 40 | confirmed (rises 20 → 27 → 37 °C in heat) |
+| b10 | `01`, `07` in heat | unknown |
+| b12 | `00` off, `08`, `0A` while heating | unknown |
+| ck | sum of b0 to b18 | |
+
+### Outdoor frame `31 10`
+
+| Byte | Meaning | Confidence |
+|---|---|---|
+| b3 | bit 4 = compressor running, bits 0-2 **running mode** (0 off, 1 cool, 2 dry, 3 fan, 4 heat). `04` = heat requested, compressor not started yet | confirmed |
+| b4 | **compressor frequency, Hz** (0 when stopped). Starts at 16 Hz and ramps up (held at 33 Hz for the first minutes of one heat start); up to 78 Hz seen | confirmed |
+| b7 | **compressor current, 0.1 A per count** (`0A` at 33 Hz, `18` at 60 Hz, `29` at 78 Hz) | assumed, check with a clamp meter |
+| b10 | 79 to 92, also 81 with the unit off for hours (so not a heatsink temperature + 40) | unknown |
+| b12 | **outdoor air temperature** + 40 | checked: 8 and 9 °C against 7.4 °C from a weather station |
+| b13 | **outdoor coil temperature** + 40 (drops below the air in heat: evaporator) | confirmed |
+| b14 | **discharge temperature** + 40 (11 °C after hours off, 44 °C after 3 minutes of heating, 88 to 98 °C at 53 to 78 Hz) | confirmed by its behaviour |
+| b17 | 0 stopped, 2-3 at low load, 5-7 at high load: outdoor fan stage? | guess |
+| ck | sum of b0 to b18 | |
+
+The two second frames hardly change: `32 20` is `00 80 00…` while off and all zero while on; `32 10` carries `41`/`46`/`4B` in b12 (a frequency or capacity limit?) and `28` in b15-b19. The decoder checks and skips them.
+
+`gree_bus.be` publishes these under the same JSON names as protocol A (`Room`, `Coil`, `Setpoint`, `Mode`, `Fan`, `CompHz`, `CompA`, `PowerW`, `OutAir`, `OutCoil`, `DischC`, `OutMode`, ...). `CoilRaw` and `DischRaw` hold the raw bytes (temperature + 40), `LoadRaw` is b7 and `Out` lists b3 to b18.
+
+### A real start-up
+
+[`captures/protocol_b_startup_heat.txt`](captures/protocol_b_startup_heat.txt): unit off for 85 s, then Heat 22 °C from Home Assistant (about 8 °C outside, 19 °C inside). b3 goes `00` → `14` one second after the command; the outdoor unit answers with mode 4 (`04`), then starts the compressor (`14`, 33 Hz). The indoor fan stays stopped until the coil reaches about 27 °C (3 minutes), then runs at low speed.
+
+Still open: b7's scale (clamp meter), b10 and b17 outdoor, b5/b10/b12 indoor, the `32 10` frame, auto mode, defrost, error codes.
 
 ## IR line
 

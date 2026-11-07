@@ -103,7 +103,7 @@ GPIO0 = BOOT button, GPIO4 = IR in, GPIO5 = IR out, GPIO8/9 = I2C (BME280, J3), 
 
 J1-3 and J1-4 are the two bus taps, not the programming TX/RX of J5. "Gree U3 / U6" are parts of the Gree indoor board, not of the bridge (whose own U3 is its 74LVC14).
 
-These points are for the GRJ819-A3 board (label 301484411), used in GWH12KF units of that era. Other Gree models and years may use other boards: look at the board's label, compare with the photo, and if it differs find the points with [adapting.md](adapting.md), step 1. Fixed-speed (non-inverter) units may have no data bus between the indoor and outdoor units at all, only switched wires: then use IR only (J1-1, J1-2, J1-5). On another board, find the equivalent points first ([protocol.md](protocol.md), "Finding the tap points").
+These points are for the GRJ819-A3 board (label 301484411), used in GWH12KF units of that era. For the Willis MGW12KCH15S/I (Gree board 30148875), see the [photo and notes in protocol.md](protocol.md#protocol-b-newer-gree-units-1200-baud). Other Gree models and years may use other boards: look at the board's label, compare with the photo, and if it differs find the points with [adapting.md](adapting.md), step 1. Fixed-speed (non-inverter) units may have no data bus between the indoor and outdoor units at all, only switched wires: then use IR only (J1-1, J1-2, J1-5). On another board, find the equivalent points first ([protocol.md](protocol.md), "Finding the tap points").
 
 ![RX and TX tap points on the GRJ819-A3 board](images/gree_board_taps.jpg)
 
@@ -118,6 +118,7 @@ Take +12 V and GND from the logic side too (points labelled `+12V` and `GND` on 
 Breaker on, then check:
 - The wall remote works as before, and the console shows `IrReceived` with `"Protocol":"GREE"` at each press.
 - About 30 s after the unit is powered (the indoor unit starts talking about 25 s after power-up), the main page shows the Gree rows: room, coil, state, indoor fan, link OK, compressor, outdoor values.
+- Units with the newer Gree bus (1200 baud, e.g. Willis MGW12KCH15S): the main page shows bus bytes but "Gree link: no valid frame yet" until the speed is set: `BusSerial 1200,8E1`, or on the Gree tools page **Detect speed and format**, then **Use the detected settings**. The values then appear within seconds, under the same names.
 - `BusAuto` shows the tap polarity. On the first board: RX inverted, TX normal (these are also the starting values). If a tap shows bytes but no frames, the script switches its polarity by itself within about 20 s and saves the one that works.
 - `BusLog 1` shows the raw `BUS: RX ...` lines in the console (`BusLog 0` to stop; it is off by default).
 
@@ -198,6 +199,7 @@ Other ecosystems: the board is a standard Matter thermostat, so Google Home, Ama
 |---|---|
 | Flasher can't open or connect | see step 2 |
 | No Gree rows on the main page | unit powered and running; J1-3 / J1-4 wiring; `BusAuto`; `BusLog 1` |
+| Bus bytes on the main page but "no valid frame yet" | bus speed: `BusDetect` (Gree tools page), then apply; newer Gree units use `BusSerial 1200,8E1` |
 | "Gree link: STANDBY" | normal: the indoor unit stops polling the outdoor unit some time after it is switched off |
 | Remote presses not seen | J1-2 (IR line); the console should show `IrReceived` |
 | Unit does not react to commands | J1-2; send `IRhvac` from the console; the unit beeps when it accepts a command |
