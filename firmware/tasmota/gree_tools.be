@@ -223,14 +223,14 @@ class GreeDetect
   # checksum) and protocol B (31|32 10|20 00 .., 20 bytes, last byte = sum of the others)
   static def gree_frames(b)
     var n = 0
-    var i = 0
-    while i + 20 <= size(b)
-      if (b[i] == 0x31 || b[i] == 0x32) && (b[i + 1] == 0x10 || b[i + 1] == 0x20) && b[i + 2] == 0
-        var x = 0
-        for k: 0 .. 18 x += b[i + k] end
-        if (x & 0xFF) == b[i + 19] n += 1 i += 20 continue end
+    var j = 0
+    while j + 20 <= size(b)
+      if (b[j] == 0x31 || b[j] == 0x32) && (b[j + 1] == 0x10 || b[j + 1] == 0x20) && b[j + 2] == 0
+        var sum = 0
+        for k: 0 .. 18 sum += b[j + k] end
+        if (sum & 0xFF) == b[j + 19] n += 1 j += 20 continue end
       end
-      i += 1
+      j += 1
     end
     for f: [[0x07, 9, 0x0D], [0x08, 11, 0x0F]]
       var i = 0

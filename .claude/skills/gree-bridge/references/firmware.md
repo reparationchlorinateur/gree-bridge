@@ -80,15 +80,15 @@ It never sends IR itself. It does nothing until Matter is on (`SetOption151 1`) 
 
 ## Tests
 
-The scripts are tested on a computer with the [Berry](https://github.com/berry-lang/berry) interpreter and small mocks of the Tasmota API (`persist.be`, `mqtt.be`, and mocks inside the test files). Build Berry, then from the `tests/` folder:
+The scripts are tested on a computer with the [Berry](https://github.com/berry-lang/berry) interpreter and small mocks of the Tasmota API (`persist.be`, `mqtt.be`, and mocks inside the test files). Build Berry, then from the `tests/` folder, always with `-s` (strict mode, as Tasmota compiles the scripts: without it a script can pass here and fail to load on the board):
 
 ```
-berry test_gree_bus.be          # 76 tests: indoor and outdoor frames, links, polarity, discovery, commands, hooks
-berry test_gree_protocol_b.be   # 25 tests: the 1200 baud bus, replaying a real start-up capture
-berry test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
-berry test_gree_tools.be        # 51 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
-                                #           IR brand, captures (single, sequence, start-up), web page
-berry test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
+berry -s test_gree_bus.be          # 76 tests: indoor and outdoor frames, links, polarity, discovery, commands, hooks
+berry -s test_gree_protocol_b.be   # 25 tests: the 1200 baud bus, replaying a real start-up capture
+berry -s test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
+berry -s test_gree_tools.be        # 51 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
+                                   #           IR brand, captures (single, sequence, start-up), web page
+berry -s test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
 ```
 
 `test_gree_bus.be` also replays real captured frames. The mocks are `persist.be`, `mqtt.be`, `gpio.be` (pin levels from a simulated line), `path.be` and `webserver.be`.
