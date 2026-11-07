@@ -11,7 +11,7 @@ Step-by-step setup: [docs/install.md](../docs/install.md).
 | [`build/gree_tasmota32s3_15.6.0.factory.bin`](build/) | First flash of a blank board, at address 0x0 |
 | [`build/gree_tasmota32s3_15.6.0.bin`](build/) | Updates from the board's web page (Firmware Upgrade) |
 | [`build/user_config_override.h`](build/user_config_override.h) | The build options; how to rebuild: [`build/README.md`](build/README.md) |
-| [`tasmota/gree_bus.be`](tasmota/gree_bus.be) | Bus decoder for both Gree bus generations (600 baud 9/11-byte frames, 1200 baud 20-byte frames): indoor frames and outdoor replies on both taps, main-page rows, MQTT `tele/<topic>/GREE`, Home Assistant discovery, polarity auto-detect |
+| [`tasmota/gree_bus.be`](tasmota/gree_bus.be) | Bus decoder for three Gree bus variants (600 baud 9/11-byte frames, 1200 baud 20-byte frames, 600 baud 20/29-byte frames): indoor frames and outdoor replies on both taps, main-page rows, MQTT `tele/<topic>/GREE`, Home Assistant discovery, polarity auto-detect |
 | [`tasmota/gree_matter.be`](tasmota/gree_matter.be) | Apple Home (Matter) glue: keeps Tasmota's Matter thermostat (v.HVAC) in line with the bus and the last IR command. Idle until Matter is turned on |
 | [`tasmota/gree_tools.be`](tasmota/gree_tools.be) | Optional "Gree tools" page: IR brand detection, bus speed / format / polarity detection, captures for decoding other units ([docs/adapting.md](../docs/adapting.md)) |
 | [`tasmota/autoexec.be`](tasmota/autoexec.be) | Loads the scripts at boot (`gree_tools.be` only if it is on the board) |
@@ -40,7 +40,7 @@ Also over MQTT as `cmnd/<topic>/<command>`. Values marked "saved" survive a rest
 |---|---|
 | `IrDetect` | Brand, model and protocol of the wall remote as decoded by Tasmota (press any button on the remote first); `IrDetect 0` forgets it |
 | `BusDetect` | Measures speed, format and polarity of both taps (about 5 s, bus decoder paused). Result in the console, on the Gree tools page and as `{"BusDetect":...}` on `stat/<topic>/RESULT` |
-| `BusDetect apply` | Uses the detected settings; turns `BusAuto` off when they are not one of the two Gree buses `gree_bus.be` decodes (600 8E1, 1200 8E1) |
+| `BusDetect apply` | Uses the detected settings; turns `BusAuto` off when they are not one of the Gree buses `gree_bus.be` decodes (600 8E1, 1200 8E1) |
 | `GreeCapture <s>` | One capture of `<s>` seconds now (1 to 600) |
 | `GreeCapture <s>,<every>,<n>` | `<n>` captures of `<s>` seconds, one every `<every>` seconds |
 | `GreeCapture startup` | Waits for the next IR command (wall remote, Home Assistant or Apple Home), keeps the 3 s before it, captures 5 s, then 5 s again 1, 2 and 3 minutes later |
@@ -83,8 +83,9 @@ The scripts are tested on a computer with the [Berry](https://github.com/berry-l
 ```
 berry -s test_gree_bus.be          # 76 tests: indoor and outdoor frames, links, polarity, discovery, commands, hooks
 berry -s test_gree_protocol_b.be   # 25 tests: the 1200 baud bus, replaying a real start-up capture
+berry -s test_gree_protocol_c.be   # 25 tests: the 600 baud long-frame bus, replaying a real capture of every command
 berry -s test_gree_matter.be       # 20 tests: mode and setpoint mapping, hold logic, fan and display, room temperature
-berry -s test_gree_tools.be        # 51 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
+berry -s test_gree_tools.be        # 52 tests: speed detection on simulated lines (300-9600 baud, 7/8 bits, parity),
                                    #           IR brand, captures (single, sequence, start-up), web page
 berry -s test_gree_integration.be  # 10 tests: gree_bus.be + gree_tools.be together
 ```

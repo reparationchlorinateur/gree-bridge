@@ -219,8 +219,9 @@ class GreeDetect
     return p.concat(" ")
   end
 
-  # Count valid Gree frames: protocol A (indoor 07 .. 0D, 9 bytes; outdoor 08 .. 0F, 11 bytes; XOR
-  # checksum) and protocol B (31|32 10|20 00 .., 20 bytes, last byte = sum of the others)
+  # Count valid Gree frames: protocols A (indoor 07 .. 0D, 9 bytes; outdoor 08 .. 0F, 11 bytes) and C
+  # (indoor 06 .. 0E, 20 bytes; outdoor 05 .. 0B, 29 bytes), XOR checksum; protocol B (31|32 10|20 00 ..,
+  # 20 bytes, last byte = sum of the others)
   static def gree_frames(b)
     var n = 0
     var j = 0
@@ -232,7 +233,7 @@ class GreeDetect
       end
       j += 1
     end
-    for f: [[0x07, 9, 0x0D], [0x08, 11, 0x0F]]
+    for f: [[0x07, 9, 0x0D], [0x08, 11, 0x0F], [0x06, 20, 0x0E], [0x05, 29, 0x0B]]
       var i = 0
       while i + f[1] <= size(b)
         if b[i] == f[0] && b[i + f[1] - 1] == f[2]
@@ -321,7 +322,7 @@ end
 
 # ---------------------------------------------------------------------------------------------------
 class GreeTools
-  static var VERSION = "2026-11-07"
+  static var VERSION = "2026-11-07b"
   static var CAP_FILE = "/gree_capture.txt"
   static var PREV_FILE = "/gree_capture_prev.txt"
   static var MAX_BYTES = 200000

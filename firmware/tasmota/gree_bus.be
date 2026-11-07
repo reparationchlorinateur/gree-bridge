@@ -39,7 +39,7 @@
     CompA     compressor current A (o7 x 0.05, from two clamp-meter readings)
     PowerW    estimated outdoor-unit input power W = 240 V x 0.95 x (CompA + 0.2 A fan/board), 0 when stopped
     LoadRaw   o7 raw
-    Out       all outdoor bytes o1..o8 as raw numbers (protocol B: b3..b18)
+    Out       all outdoor bytes o1..o8 as raw numbers (protocol B: b3..b18, protocol C: b5..b19)
     DischC    compressor discharge temperature C (o5, curve fitted on one cold reference point)
     OutLink   OK / STANDBY / LOST for the outdoor replies (same rule, using the outdoor mode).
               While not OK the outdoor temperatures and raw bytes are null; CompHz, CompA and PowerW
@@ -62,10 +62,11 @@
                      BusSerial 1200,8E1 for protocol B units; for others, found with BusDetect (gree_tools.be)
   Raw frames are not logged unless BusLog is on; the main page always shows the last frame of each tap.
 
-  Two bus protocols are decoded, whichever arrives (set the serial speed with BusSerial / BusDetect):
+  Three bus protocols are decoded, whichever arrives (set the serial speed with BusSerial / BusDetect):
     A  600 baud 8E1, 9- and 11-byte frames, XOR checksum (GWH12KF, below)
     B  1200 baud 8E1, 20-byte frames, sum checksum (newer Gree units, see "Protocol B" below)
-  Both give the same JSON fields, so the Home Assistant package and Apple Home work unchanged.
+    C  600 baud 8E1, 20- and 29-byte frames, XOR checksum (another older Gree unit, "Protocol C" below)
+  All give the same JSON fields, so the Home Assistant package and Apple Home work unchanged.
 
   Indoor frame, measured on GWH12KF (2026-10-07): 600 baud 8E1 (one idle bit between bytes),
   9 bytes every 1.0 s:  07 b1 b2 b3 00 b5 b6 ck 0D   with ck = b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6
@@ -91,6 +92,16 @@
     b7  compressor current, 0.1 A per count (assumed, not yet checked with a clamp meter)
     b12 outdoor air + 40    b13 outdoor coil + 40    b14 discharge + 40 (all three still to be confirmed)
   The 32 10 / 32 20 frames are checked and skipped. Not mapped yet: indoor b5, b10, b12; outdoor b10, b17.
+
+  Protocol C, measured on an older Gree unit (2026-11-07): 600 baud 8E1 like protocol A, same framing
+  idea and XOR checksum (ck = b1 ^ .. ^ b[n-3]), longer frames, about one of each per second:
+    indoor   06 02 00 0F b4 .. b17 ck 0E   (20 bytes)      outdoor  05 02 00 18 b4 .. b26 ck 0B   (29 bytes)
+  Indoor:  b5 room x 2 + 48 (0.5 C steps)   b7 indoor coil, raw NTC as protocol A   b10 setpoint x 2 + 48
+           (25 when off and in auto)   b11 bit 3 power, bits 0-2 mode as protocol A (00 when off)
+           b12 fan 1 low .. 3 high (bit 3 set during the first minutes of heat)
+  Outdoor: b5 compressor Hz   b6 bit 4 compressor running, bits 0-2 mode   b8 load / current (0.05 A per count
+           assumed, as protocol A's o7)   b9 outdoor air, b11 outdoor coil (NTC)   b13 discharge (protocol A's o5
+           curve).  Not mapped yet: indoor b17; outdoor b7, b15, b16, b19.
 -#
 
 import string
@@ -243,7 +254,7 @@ class GreeIndoor
     self.last_ok = nil
     self.frames = 0
     self.pending = {}
-    self.proto = nil                              # "A" (600 baud) or "B" (1200 baud) once decoded
+    self.proto = nil                              # "A", "C" (600 baud) or "B" (1200 baud) once decoded
   end
 
   # 20k NTC (B = 3950) on a 20k divider read as 8 bits (114 = 20 C on this unit, unit off for hours)
@@ -258,7 +269,9 @@ class GreeIndoor
     for f: fr self.decode(f, 0, now) end
     var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x20)
     for f: fb self.decode_b(f, now) end
-    return size(fr) + size(fb) > 0
+    var fc = gree_scan(self.pending, tap + "C", chunk, 0x06, 20, 0x0E)
+    for f: fc self.decode_c(f, now) end
+    return size(fr) + size(fb) + size(fc) > 0
   end
 
   def decode(b, i, now)
@@ -290,6 +303,25 @@ class GreeIndoor
     end
     self.fan = ((b[4] & 0x80) != 0) ? 0 : (b[4] & 0x7F)
     self.proto = "B"
+    self.last_ok = now
+    self.frames += 1
+  end
+
+  # Protocol C indoor frame 06 02 00 0F b4 .. b17 ck 0E (room and setpoint: value x 2 + 48)
+  def decode_c(b, now)
+    self.room = (b[5] - 48) / 2.0
+    self.coil_raw = b[7]
+    self.coil = GreeIndoor.coil_c(b[7])
+    self.power = (b[11] & 0x08) != 0
+    var m = b[11] & 0x07
+    if self.power || m != 0 || self.mode == nil   # off frames carry no mode: the last one is kept
+      self.mode = (m < size(GreeIndoor.MODES)) ? GreeIndoor.MODES[m] : str(m)
+    end
+    if self.power || self.setpoint == nil         # off frames read 25: the last setpoint is kept
+      self.setpoint = (b[10] - 48) / 2
+    end
+    self.fan = b[12] & 0x07
+    self.proto = "C"
     self.last_ok = now
     self.frames += 1
   end
@@ -340,6 +372,7 @@ end
 #   o6 outdoor air, same NTC curve                            o7 compressor current, 0.05 A per count
 #   o8 running mode 0 off, 1 cool, 4 heat (2 dry / 3 fan assumed, same codes as the indoor frame)
 # Protocol B: the 31 10 frame (see the top of the file); raw then holds its bytes b3 .. b18.
+# Protocol C: the 05 .. 0B frame; raw then holds its bytes b5 .. b19.
 class GreeOutdoor
   static var MODES = ["off", "cool", "dry", "fan_only", "heat"]
   # o7 scale from two clamp-meter readings on the outdoor supply (240 V, 2026-10-07):
@@ -400,7 +433,27 @@ class GreeOutdoor
     for f: fr self.decode_a(f, now) end
     var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x10)
     for f: fb self.decode_b(f, now) end
-    return size(fr) + size(fb) > 0
+    var fc = gree_scan(self.pending, tap + "C", chunk, 0x05, 29, 0x0B)
+    for f: fc self.decode_c(f, now) end
+    return size(fr) + size(fb) + size(fc) > 0
+  end
+
+  # Protocol C 05 02 00 18 b4 .. b26 ck 0B: same sensors and curves as protocol A; raw = b5 .. b19
+  def decode_c(f, now)
+    var v = []
+    for k: 5 .. 19 v.push(f[k]) end
+    self.raw = v
+    self.proto = "C"
+    self.hz = f[5]
+    self.mode_i = f[6] & 0x07
+    self.load = f[8]
+    self.amps = f[8] * GreeOutdoor.AMPS_PER_COUNT
+    self.disch_raw = f[13]
+    self.air_s = GreeOutdoor.temp_str(f[9])
+    self.coil_s = GreeOutdoor.temp_str(f[11])
+    self.disch_s = GreeOutdoor.disch_str(f[13])
+    self.last_ok = now
+    self.frames += 1
   end
 
   # 08 o1 .. o8 ck 0F
@@ -490,7 +543,7 @@ class GreeBus
   static var MAX_LEN     = 80      # keeps the HA state under its 255-character limit
   static var HEARTBEAT   = 60      # republish decoded values at least this often (s)
   # -----------------------------------------------------------
-  static var VERSION     = "2026-11-07 rev B"
+  static var VERSION     = "2026-11-07b rev B"
   # Home Assistant entities: component, object id, name, value template, extra discovery keys
   static var HA = [
     ["sensor", "room_temperature", "Room temperature (unit)", "{{ value_json.Gree.Room }}",

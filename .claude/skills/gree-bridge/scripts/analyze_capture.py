@@ -75,7 +75,8 @@ def xor(bs):
         x ^= v
     return x
 
-GREE_LAYOUTS = [(0x07, 9, 0x0D, "indoor"), (0x08, 11, 0x0F, "outdoor")]
+GREE_LAYOUTS = [(0x07, 9, 0x0D, "indoor"), (0x08, 11, 0x0F, "outdoor"),          # protocol A
+                (0x06, 20, 0x0E, "C indoor"), (0x05, 29, 0x0B, "C outdoor")]     # protocol C (same XOR rule)
 # Protocol B (newer Gree units, 1200 baud): 20 bytes  31|32  20|10  00 ..  ck = sum of bytes 0-18 & 0xFF
 B_NAMES = {(0x31, 0x20): "B indoor", (0x31, 0x10): "B outdoor", (0x32, 0x20): "B indoor2", (0x32, 0x10): "B outdoor2"}
 
@@ -349,6 +350,15 @@ def gree_decode(name, b):
         return {"comp_Hz": b[4], "running": bool(b[3] & 0x10), "mode": {0: "off", 1: "cool", 2: "dry", 3: "fan", 4: "heat"}.get(b[3] & 7, b[3] & 7),
                 "comp_A_assumed": round(b[7] * 0.1, 1), "out_air_C": b[12] - 40, "out_coil_C": b[13] - 40,
                 "discharge_C": b[14] - 40, "b10": b[10], "b17": b[17]}
+    if name == "C indoor":       # as gree_bus.be decodes it
+        return {"room_C": (b[5] - 48) / 2, "coil_C": round(ntc_c(b[7]) or 0, 1), "power": bool(b[11] & 8),
+                "mode": MODES.get(b[11] & 7, b[11] & 7), "fan": b[12] & 7, "b12": b[12], "setpoint_C": (b[10] - 48) / 2,
+                "b17": b[17]}
+    if name == "C outdoor":
+        return {"comp_Hz": b[5], "running": bool(b[6] & 0x10), "mode": {0: "off", 1: "cool", 2: "dry", 3: "fan", 4: "heat"}.get(b[6] & 7, b[6] & 7),
+                "comp_A_assumed": round(b[8] * 0.05, 2), "out_air_C": round(ntc_c(b[9]) or 0, 1),
+                "out_coil_C": round(ntc_c(b[11]) or 0, 1), "discharge_C": round(ntc_c(b[13], 0.3229) or 0, 1),
+                "b7": b[7], "b15": b[15], "b16": b[16], "b19": b[19]}
     if name in ("B indoor2", "B outdoor2"):
         return {"bytes": b.hex(" ").upper()}
     if name == "indoor":

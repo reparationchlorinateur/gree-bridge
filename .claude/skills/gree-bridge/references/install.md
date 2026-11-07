@@ -199,7 +199,7 @@ Other ecosystems: the board is a standard Matter thermostat, so Google Home, Ama
 |---|---|
 | Flasher can't open or connect | see step 2 |
 | No Gree rows on the main page | unit powered and running; J1-3 / J1-4 wiring; `BusAuto`; `BusLog 1` |
-| Bus bytes on the main page but "no valid frame yet" | bus speed: `BusDetect` (Gree tools page), then apply; newer Gree units use `BusSerial 1200,8E1` |
+| Bus bytes on the main page but "no valid frame yet" | bus speed: `BusDetect` (Gree tools page), then apply; newer Gree units use `BusSerial 1200,8E1`. If BusDetect finds 0 errors but 0 Gree frames, the unit uses a layout the decoder does not know yet: make a capture ([adapting.md](adapting.md)) |
 | "Gree link: STANDBY" | normal: the indoor unit stops polling the outdoor unit some time after it is switched off |
 | Remote presses not seen | J1-2 (IR line); the console should show `IrReceived` |
 | Unit does not react to commands | J1-2; send `IRhvac` from the console; the unit beeps when it accepts a command |

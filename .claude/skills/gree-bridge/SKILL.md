@@ -7,7 +7,7 @@ description: Build, install, troubleshoot and adapt the Gree bridge, an ESP32-S3
 
 The Gree bridge is a small ESP32-S3 board (rev B) that plugs into the logic side of a mini-split's indoor control board with one 5-wire cable (J1): +12 V, the IR receiver's data line, two high-impedance taps on the indoor/outdoor communication optocouplers, and ground. It runs Tasmota 15.6.0 plus Berry scripts:
 
-- `gree_bus.be` decodes the Gree indoor/outdoor bus and publishes it to Home Assistant by MQTT discovery. Two Gree bus generations are known: 600 baud 8E1 with 9/11-byte XOR frames (GWH12KF, board GRJ819-A3) and 1200 baud 8E1 with 20-byte sum-checked frames ("protocol B": Willis MGW12KCH15S/I made by Gree, board 30148875; needs `BusSerial 1200,8E1`). Both give the same JSON fields;
+- `gree_bus.be` decodes the Gree indoor/outdoor bus and publishes it to Home Assistant by MQTT discovery. Three Gree bus variants are known: 600 baud 8E1 with 9/11-byte XOR frames (GWH12KF, board GRJ819-A3), 1200 baud 8E1 with 20-byte sum-checked frames ("protocol B": Willis MGW12KCH15S/I made by Gree, board 30148875; needs `BusSerial 1200,8E1`) and 600 baud 8E1 with 20/29-byte XOR frames ("protocol C", another older Gree unit). All give the same JSON fields;
 - `gree_matter.be` keeps Tasmota's Matter thermostat (Apple Home) in line with the bus;
 - `gree_tools.be` adds the "Gree tools" page: IR brand detection, bus speed / format / polarity detection and captures, used to adapt the board to other units.
 
@@ -78,7 +78,7 @@ python3 scripts/analyze_capture.py gree_capture.txt --section events
 python3 scripts/analyze_capture.py gree_capture.txt --json       # for further processing
 ```
 
-`assets/example_capture_gwh12kf_real.txt` is a real start-up capture from a GWH12KF (Heat 24 °C after 3 minutes off; what it shows is described in `references/protocol.md`, "A real start-up"), `assets/example_capture_protocol_b_real.txt` one from a newer Gree unit on the 1200 baud bus (Heat 22 °C after 85 s off), and `assets/example_capture.txt` a synthetic one in Cool; use them to see what a good capture looks like. The script recognises both Gree layouts (section `gree` decodes them).
+`assets/example_capture_gwh12kf_real.txt` is a real start-up capture from a GWH12KF (Heat 24 °C after 3 minutes off; what it shows is described in `references/protocol.md`, "A real start-up"), `assets/example_capture_protocol_b_real.txt` one from a newer Gree unit on the 1200 baud bus (Heat 22 °C after 85 s off), `assets/example_capture_protocol_c_real.txt` a 10-minute capture of every command on the protocol C bus (a good model for a full decoding session: one long capture, an IR command every 30-60 s, a `GreeMark` note before each), and `assets/example_capture.txt` a synthetic one in Cool; use them to see what a good capture looks like. The script recognises all three Gree layouts (section `gree` decodes them).
 
 Several capture files can be given at once; they are read as one, in order. The script splits the data into frames (Gree layouts when they fit, otherwise header bytes and lengths it learns), finds the checksum (XOR, sum, two's complement, CRC-8) per frame type, profiles every byte, lists which bytes changed after each IR command or note (bytes already drifting before it, and the checksum, are listed apart), and gives a timeline of every byte change, including the ones no event explains. Then reason about it:
 

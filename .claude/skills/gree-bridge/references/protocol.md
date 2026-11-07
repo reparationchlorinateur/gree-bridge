@@ -4,7 +4,7 @@
 
 What was measured on a Gree **GWH12KF** (inverter mini-split, R410A, about 2013) with indoor main board **GRJ819-A3** (label 301484411), with a logic analyzer and then live from the bridge. This is what `firmware/tasmota/gree_bus.be` decodes. Other Gree units of the same era probably use the same bus, but nothing here is official: it comes from captures, and a few fields are still guesses (marked).
 
-A second, newer Gree bus ("protocol B": 1200 baud, 20-byte frames, sum checksum) was found on a Gree-built **Willis MGW12KCH15S/I** (2015) and is decoded too: see [Protocol B](#protocol-b-newer-gree-units-1200-baud) below. `gree_bus.be` decodes whichever of the two arrives, into the same fields.
+Two more Gree buses are decoded too, into the same fields: a newer one ("protocol B": 1200 baud, 20-byte frames, sum checksum) found on a Gree-built **Willis MGW12KCH15S/I** (2015), see [Protocol B](#protocol-b-newer-gree-units-1200-baud), and a longer variant of this one ("protocol C": 600 baud, 20- and 29-byte frames, same XOR checksum) found on another older Gree unit, see [Protocol C](#protocol-c-600-baud-long-frames). `gree_bus.be` decodes whichever arrives.
 
 ## The indoor board
 
@@ -169,6 +169,49 @@ The two second frames hardly change: `32 20` is `00 80 00…` while off and all 
 [`captures/protocol_b_startup_heat.txt`](captures/protocol_b_startup_heat.txt): unit off for 85 s, then Heat 22 °C from Home Assistant (about 8 °C outside, 19 °C inside). b3 goes `00` → `14` one second after the command; the outdoor unit answers with mode 4 (`04`), then starts the compressor (`14`, 33 Hz). The indoor fan stays stopped until the coil reaches about 27 °C (3 minutes), then runs at low speed.
 
 Still open: b7's scale (clamp meter), b10 and b17 outdoor, b5/b10/b12 indoor, the `32 10` frame, auto mode, defrost, error codes.
+
+## Protocol C: 600 baud, long frames
+
+Found in November 2026 on another older Gree inverter unit (same IR remote and `GREE` codes; model and indoor board to be added). Same line as the GWH12KF (**600 baud 8E1**, RX tap inverted, TX tap normal, BusDetect: 0 errors) and the same kind of frame, but longer:
+
+```
+06 02 00 0F b4 .. b17 ck 0E                  indoor unit, 20 bytes, about once a second
+05 02 00 18 b4 .. b26 ck 0B                  outdoor unit, 29 bytes, about 50 ms after it (RX tap only)
+ck = b1 ^ b2 ^ ... ^ b[n-3]                  (the protocol A rule; checked on 1,448 captured frames)
+```
+
+Byte 3 is the number of bytes between it and the end byte (15 and 24). Temperatures are raw 8-bit NTC readings with **the same formulas as protocol A** (coil, outdoor air, outdoor coil; discharge with protocol A's discharge curve), except the room temperature and setpoint, which are **value × 2 + 48** (0.5 °C steps).
+
+### Indoor frame `06`
+
+| Byte | Meaning | Confidence |
+|---|---|---|
+| b4 | `AA`, constant | |
+| b5 | **room temperature** × 2 + 48 (`5D` = 22.5 °C) | consistent: the coil read 21.9 °C with the unit off for a while, and the room rose 2 °C during 4 minutes of heating |
+| b7 | **indoor coil temperature**, raw NTC (protocol A formula): 22 °C off, up to 36 °C in heat | confirmed |
+| b10 | **setpoint** × 2 + 48 (`5C` = 22 °C). Reads 25 °C when off and in auto (the unit's auto setpoint): the decoder keeps the last setpoint while off | confirmed with commands (18, 22, 23, 24) |
+| b11 | **power + mode** as protocol A's b3: bit 3 = on, bits 0-2 mode (1 cool, 2 dry, 3 fan, 4 heat). `00` when off. In auto it shows the mode the unit chose | confirmed with commands |
+| b12 | **indoor fan**: 1 low, 2 medium, 3 high, 0 off; dry runs at 1. Bit 3 was also set for the first 3 minutes of a heat start (`09`) | confirmed for 1-3; bit 3 unknown (warm-up?) |
+| b14 | `3C`, constant | |
+| b17 | 0 / 1, set from 2.5 to 4.5 minutes into a heat run | unknown |
+| ck | XOR of b1 to b17 | |
+
+### Outdoor frame `05`
+
+| Byte | Meaning | Confidence |
+|---|---|---|
+| b5 | **compressor frequency, Hz** (15 at start, ramps about 1 Hz/s, 55 Hz seen) | confirmed |
+| b6 | bit 4 = compressor running, bits 0-2 **running mode** (0 off, 1 cool, 2 dry, 3 fan, 4 heat); `04` → `14` at a heat start | confirmed |
+| b7 | `80` off, `8B` heating, `86` cool without compressor, `00` in fan mode | unknown |
+| b8 | **compressor current / load**, 0 when stopped, 38-46 at 52-55 Hz. Read with protocol A's scale (0.05 A per count) | scale assumed (same family as protocol A's o7) |
+| b9 | **outdoor air temperature**, raw NTC (9 °C against 7.2 °C from a weather station) | confirmed |
+| b11 | **outdoor coil temperature**, raw NTC (9 → 1 °C in heat: evaporator) | confirmed |
+| b13 | **discharge temperature**, protocol A's discharge curve (9 °C cold, 43 °C after 4 minutes at 55 Hz) | consistent |
+| b15 | 37 → 50, rises slowly while running | unknown (module temperature?) |
+| b16, b19 | change with the compressor start and stop | unknown |
+| ck | XOR of b1 to b26 | |
+
+`Out` (Home Assistant "Outdoor raw bytes") lists b5 to b19. A real capture with every command (heat 22, setpoints 23 / 24 / 22, fan low / high / medium, cool 18, dry, fan, auto, off, all sent by IR from the board): [`captures/protocol_c_sequence.txt`](captures/protocol_c_sequence.txt).
 
 ## IR line
 

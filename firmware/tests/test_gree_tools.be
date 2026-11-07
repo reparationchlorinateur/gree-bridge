@@ -166,6 +166,12 @@ r = det(wave([[20000, pb_in], [300000, pb_out]], 1200, "8E1", 1, 0, 800000, 4))
 show(r)
 check("protocol B: 1200 8E1, both 20-byte frames counted", r["baud"] == 1200 && r["fmt"] == "8E1" && r["errors"] == 0 &&
       r["gree"] == 2 && string.find(GreeDetect.summary("TX", r), "2 Gree frames") > 0)
+# protocol C frames from a real unit (600 8E1, 20- and 29-byte frames, XOR checksum): counted as Gree frames
+var pc_in = bytes("0602000FAA5D007700005C0C09003C000000E80E")
+var pc_out = bytes("05020018AA14148B0153005300220025" "9BFF0008000000000000005" "10B")
+r = det(wave([[20000, pc_in], [500000, pc_out]], 600, "8E1", 1, 0, 1500000, 4))
+show(r)
+check("protocol C: 600 8E1, both frames counted", r["baud"] == 600 && r["fmt"] == "8E1" && r["errors"] == 0 && r["gree"] == 2)
 
 var txt = bytes()
 for k: 0 .. 39 txt.add((k * 37 + 11) % 256) end
