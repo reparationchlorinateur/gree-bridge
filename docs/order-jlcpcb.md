@@ -1,6 +1,6 @@
 # Ordering assembled boards from JLCPCB
 
-JLCPCB can make the PCB and solder every SMD part, the ESP32-S3 module included. You then only solder the three connectors (J1, J3, J5) and the header for the BME280 breakout (U5), which takes a few minutes per board. Prices below are from October 2026 and change often.
+JLCPCB can make the PCB and solder every SMD part, the ESP32-S3 module included. **Checked in November 2026: boards assembled by JLCPCB from these exact files (U1 rotation 270, U4 at its pad centre) all worked first time, four of them now in service.** You then only solder the three connectors (J1, J3, J5) and the header for the BME280 breakout (U5), which takes a few minutes per board. Prices below are from October 2026 and change often.
 
 Files, all in [`hardware/`](../hardware/):
 
