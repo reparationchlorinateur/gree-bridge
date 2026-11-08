@@ -181,7 +181,15 @@ Measured November 2026 on a Gree multi-split ("combo") system: one outdoor unit,
 
 A single split uses port 0 (`31 10` / `31 20`), so the decoder matches the high nibble only (`1x` outdoor, `2x` indoor) and also skips `40 1x` frames whole. The bytes decode as on a single split: `31 21 00 14 20 08 3D 40 00 44 07` = on, heat, setpoint 21 °C, room 24 °C, coil 28 °C; `31 11 00 04 00 00 00 00 00 96 00 00 2F 2F 2F` = heat requested, compressor stopped (room above setpoint), outdoor air, coil and discharge 7 °C. On these heads b4 reads `20` with the fan stopped (shown as fan 32); its meaning is still open.
 
-The two heads share one compressor, so the outdoor values each board reports may be the same data; when two boards are installed on one outdoor unit, add only one board's energy sensor to the Home Assistant Energy dashboard.
+The second head on the same outdoor unit is **port 2** (`31 22` / `31 12` / `32 22` / `40 12`); a board on each head decodes its own port with no setting.
+
+What each board sees (two boards, measured 2026-11-08):
+
+- **The outdoor values are shared.** Both ports carry the same compressor frequency, current, outdoor mode and temperatures, even for a head that is off: with only Diner heating, the board on the idle Etage head also showed heat, 14 → 30 Hz. Add only **one** board's energy sensor to the Energy dashboard.
+- **Per port: b8 and b9** of `31 1p` differ between the ports. With one head running, its port showed b8 = 1, b9 = 224 and the idle port b8 = 0, b9 = 60 (`96` = 150 on both when everything is off); with both running, 1 / 4 on both, later 0 / 254. b8 looks like "this port is being served"; b9 is not decoded (expansion valve or a state code).
+- **Idle head in heat:** its coil warms a little (21 → 23 °C) while the other head heats; its fan stays off.
+- **Both heating:** compressor up to 60 Hz, 7 counts (≈ 1.6 kW), both coils above 33 °C within 2 minutes.
+- **Mode conflict:** with Diner heating, Etage switched to cool: the outdoor unit **stayed in heat** (first mode wins), the Etage head reported cool on its own bus but stayed idle (fan off, coil hot). The IR climate in Home Assistant then shows "cool" for a head that does nothing, so a site with several heads should watch for opposite modes (heat vs cool/dry) on the bus `Mode` values.
 
 ## Protocol C: 600 baud, long frames
 
