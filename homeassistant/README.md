@@ -27,6 +27,7 @@ What each room package contains (`bedroom_heat_pump` stands for your room's slug
 | `switch.bedroom_heat_pump_turbo` | Turbo on/off (`tasmota_irhvac.set_turbo`) |
 | `switch.bedroom_heat_pump_display` | The unit's LED display on/off (`tasmota_irhvac.set_light`) |
 | `sensor.bedroom_heat_pump_outdoor_energy` | kWh integrated from the estimated outdoor power, for the Energy dashboard |
+| `input_select.bedroom_heat_pump_vertical` + automation "Bedroom heat pump: air direction" | Fixed louvre position (off, auto, highest ... lowest), sent by IR |
 | automation "Bedroom heat pump: follow the unit (Gree bus)" | Keeps the climate in line with the unit's real on/off, mode and setpoint from the bus (after a restart, a missed remote press, or a change from Apple Home). Waits until things have been steady for 15 s, then writes a state-only message to the climate's state topic. **It never sends IR.** Each correction goes to the logbook |
 
 The `# homekit:` line at the top of each room file is what `new_room.sh` reads to build `gree_homekit.yaml`.
@@ -70,7 +71,7 @@ cards:
         name: Humidity
       - entity: sensor.bedroom_heat_pump_bme280_pressure
         name: Pressure
-      - entity: input_select.bedroom_vertical      # see "Louvre position" below
+      - entity: input_select.bedroom_heat_pump_vertical   # see "Louvre position" below
         name: Air direction
 ```
 
@@ -82,10 +83,6 @@ The BME280 sits in the unit's air path: while the unit runs, its humidity and te
 
 ## Louvre position (air direction)
 
-The climate only offers swing off / vertical. For fixed positions (highest, high, middle, low, lowest, auto), a dropdown helper plus an automation works well with `tasmota_irhvac`:
-
-1. Settings → Devices & services → Helpers → Dropdown, for example `input_select.bedroom_vertical`, options `off`, `highest`, `high`, `middle`, `low`, `lowest`, `auto`.
-2. An automation from the community blueprint "Climate Vane Control - Tasmota-IRHVAC" (nao-pon) with the room's climate and that helper: picking a position sends it to the unit (`SwingV` in the IR command).
-3. Put the helper on the room's card (example above).
+The climate only offers swing off / vertical. For fixed positions, each room package also makes a dropdown, `input_select.<room>_vertical` (off, auto, highest, high, middle, low, lowest), and an automation "<room>: air direction" that sends the picked position to the unit by IR (`tasmota_irhvac.set_swingv`). Put the dropdown on the room's card (example above, or a tile card with the "select options" feature).
 
 If you replace an older IR board by a Gree bridge, point these automations at the new `climate.<room>_heat_pump`: an automation still aimed at the old climate does nothing, with no error on the card.
