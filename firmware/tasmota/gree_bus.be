@@ -217,8 +217,8 @@ end
 # Protocol B (1200 baud): valid 20-byte frames  h b1 00 .. ck,  h = 31, 32 or 40,
 # b1 = 1p (outdoor) or 2p (indoor), p = the head's port on a multi-split outdoor unit
 # (0 on a single split, 1, 2 ... on a multi-split), ck = sum of bytes 0 .. 18 & 0xFF.
-# Returns the 31 frames whose b1 high nibble is the one asked for (10 or 20); the others
-# are skipped whole so the scan stays aligned. pending as in gree_scan (use another key than gree_scan's).
+# Returns the 31 frames (and multi-split 40 frames) whose b1 high nibble is the one asked for
+# (10 or 20); the others are skipped whole so the scan stays aligned. pending as in gree_scan (use another key than gree_scan's).
 def gree_scan_sum(pending, key, chunk, b1)
   var n = 20
   var b = pending.find(key, bytes()) + chunk
@@ -235,7 +235,7 @@ def gree_scan_sum(pending, key, chunk, b1)
       ok = ((x & 0xFF) == b[i + n - 1])
     end
     if ok
-      if h == 0x31 && t == b1 out.push(b[i .. i + n - 1]) end
+      if (h == 0x31 || h == 0x40) && t == b1 out.push(b[i .. i + n - 1]) end
       i += n
       used = i
     else
@@ -270,7 +270,8 @@ class GreeIndoor
   def feed(chunk, now, tap)
     var fr = gree_scan(self.pending, tap, chunk, 0x07, 9, 0x0D)
     for f: fr self.decode(f, 0, now) end
-    var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x20)
+    var fb = []
+    for f: gree_scan_sum(self.pending, tap + "B", chunk, 0x20) if f[0] == 0x31 fb.push(f) end end
     for f: fb self.decode_b(f, now) end
     var fc = gree_scan(self.pending, tap + "C", chunk, 0x06, 20, 0x0E)
     for f: fc self.decode_c(f, now) end
@@ -304,7 +305,7 @@ class GreeIndoor
     if self.power || self.setpoint == nil         # off frames always read 25: the last setpoint is kept
       self.setpoint = b[6] - 40
     end
-    self.fan = ((b[4] & 0x80) != 0) ? 0 : (b[4] & 0x7F)
+    self.fan = ((b[4] & 0x80) != 0) ? 0 : (b[4] & 0x0F)   # multi-split heads add 0x20; 4 = turbo
     self.proto = "B"
     self.last_ok = now
     self.frames += 1
@@ -388,9 +389,13 @@ class GreeOutdoor
   # (unit off for 6 h, pipe at outdoor temperature, 2026-10-08), NTC B = 3950 assumed.
   static var DISCH_K = 0.3229
   static var B_AMPS_PER_COUNT = 0.1   # protocol B b7, assumed (2.4 A at 60 Hz heating looks right)
+  # multi-split outdoor units: b7 of the 40 1p frame, 0 stopped, 6-7 at 57 Hz heating. 1 A per count
+  # assumed (about 1.5 kW at 57 Hz looks right for a two-head unit), check with a clamp meter
+  static var B40_AMPS_PER_COUNT = 1.0
   # decoded values, the same for both protocols: compressor Hz, mode code, load (current) count,
   # current A, discharge raw, and the three temperatures already formatted ("12.5" or "null")
   var raw, last_ok, frames, pending, proto, hz, mode_i, load, amps, disch_raw, coil_s, air_s, disch_s
+  var multi_amps                      # current from the multi-split 40 1p frame (nil on a single split)
 
   def init()
     self.last_ok = nil
@@ -434,7 +439,10 @@ class GreeOutdoor
   def feed(chunk, now, tap)
     var fr = gree_scan(self.pending, tap, chunk, 0x08, 11, 0x0F)
     for f: fr self.decode_a(f, now) end
-    var fb = gree_scan_sum(self.pending, tap + "B", chunk, 0x10)
+    var fb = []
+    for f: gree_scan_sum(self.pending, tap + "B", chunk, 0x10)
+      if f[0] == 0x40 self.multi_amps = f[7] * GreeOutdoor.B40_AMPS_PER_COUNT else fb.push(f) end
+    end
     for f: fb self.decode_b(f, now) end
     var fc = gree_scan(self.pending, tap + "C", chunk, 0x05, 29, 0x0B)
     for f: fc self.decode_c(f, now) end
@@ -486,7 +494,7 @@ class GreeOutdoor
     self.hz = f[4]
     self.mode_i = f[3] & 0x07
     self.load = f[7]
-    self.amps = f[7] * GreeOutdoor.B_AMPS_PER_COUNT
+    self.amps = (self.multi_amps != nil) ? self.multi_amps : f[7] * GreeOutdoor.B_AMPS_PER_COUNT
     self.disch_raw = f[14]
     self.air_s = string.format("%.1f", f[12] - 40.0)
     self.coil_s = string.format("%.1f", f[13] - 40.0)
