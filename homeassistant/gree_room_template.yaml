@@ -99,6 +99,21 @@ sensor:
     max_sub_interval:
       minutes: 2
 
+# Vertical louvre (air direction): pick a fixed position here; it is sent to the unit by IR
+# (tasmota_irhvac.set_swingv). "auto" = louvre sweeping, "off" = stays where it is.
+input_select:
+  DEVICE_SLUG_vertical:
+    name: "DEVICE_NAME air direction"
+    icon: mdi:arrow-up-down
+    options:
+      - "off"
+      - "auto"
+      - "highest"
+      - "high"
+      - "middle"
+      - "low"
+      - "lowest"
+
 # Follow the unit: the IR climate only knows what Home Assistant sent and what the board heard from
 # the wall remote. This brings it in line with what the unit itself reports on its indoor/outdoor bus
 # (on/off, mode, setpoint), e.g. after a restart or a remote press the board did not catch. It only
@@ -157,3 +172,19 @@ automation:
           message: >-
             follows the unit (Gree bus): {{ (bus_mode ~ ' ' ~ bus_sp ~ ' °C') if unit_on else 'off' }},
             Home Assistant had {{ ha_mode }}{{ (' ' ~ ha_sp ~ ' °C') if ha_mode != 'off' else '' }}
+  - id: TOPIC_vertical
+    alias: "DEVICE_NAME: air direction"
+    description: "Sends the position picked in input_select.DEVICE_SLUG_vertical to the unit (IR). Made by new_room.sh."
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: input_select.DEVICE_SLUG_vertical
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] and trigger.from_state is not none and trigger.from_state.state not in ['unknown', 'unavailable'] }}"
+    actions:
+      - action: tasmota_irhvac.set_swingv
+        target:
+          entity_id: climate.DEVICE_SLUG
+        data:
+          swingv: "{{ trigger.to_state.state }}"

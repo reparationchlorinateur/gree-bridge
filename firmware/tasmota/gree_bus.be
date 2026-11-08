@@ -214,8 +214,10 @@ def gree_scan(pending, tap, chunk, head, n, tail)
   return out
 end
 
-# Protocol B (1200 baud): valid 20-byte frames  h b1 00 .. ck,  h = 31 or 32, b1 = 10 or 20,
-# ck = sum of bytes 0 .. 18 & 0xFF. Returns the 31 frames whose b1 is the one asked for; the others
+# Protocol B (1200 baud): valid 20-byte frames  h b1 00 .. ck,  h = 31, 32 or 40,
+# b1 = 1p (outdoor) or 2p (indoor), p = the head's port on a multi-split outdoor unit
+# (0 on a single split, 1, 2 ... on a multi-split), ck = sum of bytes 0 .. 18 & 0xFF.
+# Returns the 31 frames whose b1 high nibble is the one asked for (10 or 20); the others
 # are skipped whole so the scan stays aligned. pending as in gree_scan (use another key than gree_scan's).
 def gree_scan_sum(pending, key, chunk, b1)
   var n = 20
@@ -225,14 +227,15 @@ def gree_scan_sum(pending, key, chunk, b1)
   var i = 0
   while i + n <= size(b)
     var h = b[i]
-    var ok = (h == 0x31 || h == 0x32) && (b[i + 1] == 0x10 || b[i + 1] == 0x20) && b[i + 2] == 0
+    var t = b[i + 1] & 0xF0
+    var ok = (h == 0x31 || h == 0x32 || h == 0x40) && (t == 0x10 || t == 0x20) && b[i + 2] == 0
     if ok
       var x = 0
       for k: 0 .. n - 2 x += b[i + k] end
       ok = ((x & 0xFF) == b[i + n - 1])
     end
     if ok
-      if h == 0x31 && b[i + 1] == b1 out.push(b[i .. i + n - 1]) end
+      if h == 0x31 && t == b1 out.push(b[i .. i + n - 1]) end
       i += n
       used = i
     else

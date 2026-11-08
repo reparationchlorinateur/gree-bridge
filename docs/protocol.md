@@ -168,6 +168,21 @@ The two second frames hardly change: `32 20` is `00 80 00…` while off and all 
 
 Still open: b7's scale (clamp meter), b10 and b17 outdoor, b5/b10/b12 indoor, the `32 10` frame, auto mode, defrost, error codes.
 
+### Multi-split outdoor units (port address)
+
+Measured November 2026 on a Gree multi-split ("combo") system: one outdoor unit, two indoor heads, IR remote decoded as `GREE` / `YAW1F`. Same line (**1200 baud 8E1**, RX tap inverted, TX tap normal, sum checksum), but **the low nibble of b1 is the head's port** on the outdoor unit:
+
+```
+31 11 00 b3 .. b18 ck     outdoor unit, main frame, port 1
+31 21 00 b3 .. b18 ck     indoor unit (port 1), main frame
+32 11 / 32 21             second frames
+40 11 00 00 .. 00 51      extra outdoor frame, all zero so far
+```
+
+A single split uses port 0 (`31 10` / `31 20`), so the decoder matches the high nibble only (`1x` outdoor, `2x` indoor) and also skips `40 1x` frames whole. The bytes decode as on a single split: `31 21 00 14 20 08 3D 40 00 44 07` = on, heat, setpoint 21 °C, room 24 °C, coil 28 °C; `31 11 00 04 00 00 00 00 00 96 00 00 2F 2F 2F` = heat requested, compressor stopped (room above setpoint), outdoor air, coil and discharge 7 °C. On these heads b4 reads `20` with the fan stopped (shown as fan 32); its meaning is still open.
+
+The two heads share one compressor, so the outdoor values each board reports may be the same data; when two boards are installed on one outdoor unit, add only one board's energy sensor to the Home Assistant Energy dashboard.
+
 ## Protocol C: 600 baud, long frames
 
 Found in November 2026 on another older Gree inverter unit (same IR remote and `GREE` codes; model and indoor board to be added). Same line as the GWH12KF (**600 baud 8E1**, RX tap inverted, TX tap normal, BusDetect: 0 errors) and the same kind of frame, but longer:
