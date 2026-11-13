@@ -12,7 +12,7 @@ Step-by-step setup: [docs/install.md](../docs/install.md).
 | [`build/gree_tasmota32s3_15.6.0.bin`](build/) | Updates from the board's web page (Firmware Upgrade) |
 | [`build/user_config_override.h`](build/user_config_override.h) | The build options; how to rebuild: [`build/README.md`](build/README.md) |
 | [`tasmota/gree_bus.be`](tasmota/gree_bus.be) | Bus decoder for three Gree bus variants (600 baud 9/11-byte frames, 1200 baud 20-byte frames, 600 baud 20/29-byte frames): indoor frames and outdoor replies on both taps, main-page rows, MQTT `tele/<topic>/GREE`, Home Assistant discovery, polarity auto-detect |
-| [`tasmota/gree_matter.be`](tasmota/gree_matter.be) | Apple Home (Matter) glue: keeps Tasmota's Matter thermostat (v.HVAC) in line with the bus and the last IR command. Idle until Matter is turned on |
+| [`tasmota/gree_matter.be`](tasmota/gree_matter.be) | Apple Home (Matter): `GreeMatter <room>` sets up the endpoints named after the room; keeps Tasmota's Matter thermostat (v.HVAC) in line with the bus and the last IR command; drives the fan, dry mode and swing tiles. Idle until Matter is turned on |
 | [`tasmota/gree_tools.be`](tasmota/gree_tools.be) | Optional "Gree tools" page: IR brand detection, bus speed / format / polarity detection, captures for decoding other units ([docs/adapting.md](../docs/adapting.md)) |
 | [`tasmota/autoexec.be`](tasmota/autoexec.be) | Loads the scripts at boot (`gree_tools.be` only if it is on the board) |
 | [`tasmota/template.json`](tasmota/template.json) | GPIO template |
@@ -72,9 +72,11 @@ The IR side is plain Tasmota: `IrReceived` messages on `tele/<topic>/RESULT` for
 Tasmota's Matter v.HVAC thermostat sends IR commands by itself, but it only knows what it sent. `gree_matter.be` fills in the rest:
 - the thermostat's mode, setpoint and room temperature follow the unit's real state from the bus, about 15 s after a change made with the wall remote or Home Assistant;
 - the room temperature comes from the unit's sensor, or from the BME280 once the bus has been silent for a while (unit off);
-- the fan speed and display state the Home app sends are the ones from the last IR command, so a Home app change does not reset them.
+- the fan speed and display state the Home app sends are the ones from the last IR command, so a Home app change does not reset them;
+- the controls Matter's thermostat lacks are extra endpoints it drives itself, by sending `IRhvac` with the unit's full last state and one thing changed: a v.Fan (Min / Medium / Max, off = Auto), a "dry mode" v.Relay (on = Dry, off = unit off) and a "swing" v.Relay (louvre sweeping). Turbo and display are v.HVAC options, handled by Tasmota;
+- `GreeMatter <room> [fr]` writes all the endpoints (thermostat, display, turbo, fan, dry mode, swing, BME280 temperature and humidity, outdoor temperature) with the room in their names and sets `FriendlyName1` (the bridge name the Home app keeps from pairing) to the room, so several boards in one house look different; `GreeMatterPair 0/1` closes / opens the pairing window, to pair one board at a time.
 
-It never sends IR itself. It does nothing until Matter is on (`SetOption151 1`) and a v.HVAC endpoint exists.
+It does nothing until Matter is on (`SetOption151 1`, or `GreeMatter <room>` which turns it on) and a v.HVAC endpoint exists. The extra endpoints are found by the `"gree"` key `GreeMatter` writes in their configuration (or endpoints 5 / 6 / 7).
 
 ## Tests
 

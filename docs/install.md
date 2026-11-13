@@ -145,25 +145,34 @@ Fix the board so it cannot move (the [printed case](../hardware/case/), or stand
 
 Over your normal Wi-Fi; no Thread, no extra hardware. The iPhone, and the HomePod or Apple TV that acts as home hub, must be on the same network as the board (Matter finds it by mDNS and talks IPv6 link-local).
 
-1. Console: `SetOption151 1`, then `Restart 1`.
-2. Endpoints. Either in **Configuration → Matter**:
-   - remove the BME280 temperature, pressure and humidity endpoints Tasmota adds by itself (inside the unit they read the unit's own air),
-   - add a **v.HVAC** endpoint: Vendor `GREE`, Model -1, Min 16, Max 30, Fan Auto, Temp sensor `Gree#Room`, name "Bedroom heat pump",
-   - add a **v.HVAC option** endpoint: HVAC endpoint 2, Option `Light`, name "Bedroom display".
+1. Console: `GreeMatter <room>` (English names) or `GreeMatter <room> fr` (French names), for example `GreeMatter Bedroom`. The room name is 1 to 20 characters and may contain spaces. The command:
+   - turns Matter on if it is off (the board then restarts twice),
+   - sets `FriendlyName1` to the room: that is the bridge name the Home app stores **at pairing** and never refreshes, so set it before pairing; with the default "Tasmota" every board looks the same,
+   - replaces the Matter endpoints with these, each with the room in its name, so several boards in one house never look alike:
 
-   Or all at once from a terminal (the board restarts):
-   ```
-   curl -u admin:<WebPassword> http://<board ip>/matterc --data-urlencode 'config_json={"2":{"type":"v_hvac","name":"Bedroom heat pump","vendor":"GREE","model":-1,"min_temp":16,"max_temp":30,"fan":"Auto","temp_filter":"Gree#Room"},"3":{"type":"v_hvac_option","name":"Bedroom display","hvac_ep":2,"option":"Light"}}'
-   ```
-3. Pair: while the board is not paired, its main page shows **"Commissioning open"** with a QR code and a manual pairing code for about 10 minutes after a restart (Configuration → Matter → Open commissioning reopens it). In the Home app: **+ → Add Accessory**, scan the code (or "More options…" and type the code), accept the "uncertified accessory" warning, choose the room.
-4. In the Home app you get a **thermostat** (Off, Heat, Cool, Auto, target temperature, room temperature) and a **display switch**.
-   - Commands from the Home app are sent by the board as IR. They keep the fan speed and display state the unit had last (from Home Assistant or the wall remote) and always send swing Off.
-   - The Home app shows the unit's real state from the bus, including changes made with the wall remote or Home Assistant (about 15 s after a change).
+   | Endpoint | Type | In the Home app |
+   |---|---|---|
+   | 2 | v.HVAC (Vendor `GREE`, Temp sensor `Gree#Room`) | "Bedroom heat pump": thermostat, Off / Heat / Cool / Auto, target and room temperature |
+   | 3 | v.HVAC option `Light` | "Bedroom display": the unit's display on/off |
+   | 4 | v.HVAC option `Turbo` | "Bedroom turbo" on/off |
+   | 5 | v.Fan | "Bedroom fan": 3 speeds = Min / Medium / Max; fan off = Auto |
+   | 6 | v.Relay | "Bedroom dry mode": on = unit in Dry (dehumidifying), off = unit off (only if it is in Dry) |
+   | 7 | v.Relay | "Bedroom swing": on = louvre sweeping, off = back to the last fixed position |
+   | 8, 9 | BME280 temperature, humidity | "Bedroom temperature", "Bedroom humidity" (inside the unit they read the unit's air while it runs) |
+   | 10 | temperature, `Gree#OutAir` | "Bedroom outdoor": outdoor air temperature from the bus (empty while the bus is quiet) |
+
+   `GreeMatter` alone shows the bridge name and the endpoints. Apple Home has no pressure sensor type, so the pressure stays on the web page and in Home Assistant.
+2. **One board at a time.** An unpaired board opens its pairing window by itself after every restart, and the Home app only lists "Matter Accessory", so you cannot tell boards apart before pairing. Close the window on the other unpaired boards first: `GreeMatterPair 0` (`GreeMatterPair 1` opens it and shows the code; `SetOption151 0` turns Matter off altogether).
+3. Pair: while the board is not paired, its main page shows **"Commissioning open"** with a QR code and a manual pairing code for about 10 minutes after a restart (or `GreeMatterPair 1`). In the Home app: **+ → Add Accessory**, scan the code (or "More options…" and type the code), pick the green Matter accessory (a house icon is a Home Assistant HomeKit bridge), accept the "uncertified accessory" warning, choose the room. A board paired before its name was set keeps the old name in the Home app: rename it there, or remove it and pair again.
+4. How it behaves:
+   - Thermostat commands from the Home app are sent by the board as IR. They keep the fan speed and display state the unit had last (from Home Assistant, the wall remote or the fan tile) and send swing Off.
+   - The fan, dry mode and swing tiles are sent by `gree_matter.be` as IR: the unit's full last state with that one thing changed.
+   - The Home app shows the unit's real state from the bus, including changes made with the wall remote or Home Assistant (about 15 s after a change). The fan and swing tiles follow the last IR state (the bus does not carry them).
    - Room temperature: the unit's own sensor while it runs, the BME280 once the unit has been off for a while (it reads the room well then).
-   - No fan speed control in the Home app for this device type; Dry and Fan only show as Cool or Off there.
-5. With Home Assistant too: changes made in the Home app reach Home Assistant within about 15 s (follow-the-unit automation).
+   - Apple Home's Matter thermostat has no Dry or Fan only mode: use the dry mode tile; Fan only shows as Cool.
+5. With Home Assistant too: on/off, mode and setpoint changes made in the Home app reach Home Assistant within about 15 s (follow-the-unit automation); fan, swing and turbo changes from the Home app do not (the bus does not carry them). Do not also list the room in Home Assistant's HomeKit bridge (`gree_homekit.yaml`), or it shows twice.
 
-Free memory with Apple Home connected: about 130 KB of heap, which is fine.
+Free memory with the ten endpoints and Apple Home connected: about 80 KB of heap.
 
 ## 8. Without Home Assistant
 
@@ -173,13 +182,13 @@ The board works on its own: the wall remote, the bus decoding, the web page and 
 2. Turn MQTT off in the console: `SetOption3 0` (`SetOption3 1` turns it back on if Home Assistant comes later). The script's MQTT publishing then does nothing.
 
 What works without Home Assistant:
-- The Home app and Siri: on/off, mode, target temperature, room temperature, display on/off; Home app automations and scenes (schedules, "when I leave"); control away from home through the home hub.
+- The Home app and Siri: on/off, mode, target temperature, room temperature, display, turbo, fan speed, dry mode, swing, BME280 and outdoor temperatures; Home app automations and scenes (schedules, "when I leave"); control away from home through the home hub.
 - The wall remote as always, and the Home app follows it (bus).
 - The board's web page shows everything the bus gives: room and coil temperatures, mode, setpoint, indoor fan, compressor Hz and current, estimated outdoor power, outdoor temperatures, link status.
 - Manual IR commands from the console, for example: `IRhvac {"Vendor":"GREE","Power":"On","Mode":"Cool","Temp":22,"FanSpeed":"Auto","Light":"On"}`.
 - Wi-Fi recovery (BOOT 6 times), firmware updates from the web page.
 
-What you do not get without Home Assistant: energy history and graphs, the turbo switch, fan speed and swing control from the app, dashboards and notifications.
+What you do not get without Home Assistant: energy history and graphs, fixed louvre positions, dashboards and notifications.
 
 Other ecosystems: the board is a standard Matter thermostat, so Google Home, Amazon Alexa or SmartThings should also work (not tested). One board can be in two of them at once: in the Home app, the accessory's settings → "Turn On Pairing Mode" gives a new code for the second app.
 
