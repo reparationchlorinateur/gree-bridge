@@ -22,6 +22,8 @@ class MockTasmota
     return {}
   end
   def millis() return NOW end
+  var opt151
+  def get_option(n) return (n == 151) ? (self.opt151 == nil ? 1 : self.opt151) : 0 end
   def read_sensors() return '{"Time":"x","BME280":{"Temperature":18.9,"Humidity":60.3},"TempUnit":"C"}' end
 end
 tasmota = MockTasmota()
@@ -224,6 +226,27 @@ tasmota.rules["IrReceived#IRHVAC"]({"Vendor": "GREE", "Power": "On", "Mode": "He
 tick(20)
 check("heat followed", hv.shadow_system_mode == 4 && dry.shadow_onoff == false)
 check("remote heard: no IR sent", size(CMDS) == 6)
+
+# ---- Matter off: the device exists (Tasmota creates it) but nothing is touched
+tasmota.opt151 = 0
+var sent0 = size(CMDS)
+fan.shadow_fan_mode = 1
+tick(2)
+check("Matter off: no IR, no crash", size(CMDS) == sent0)
+tasmota.cmds["GreeMatter"]("GreeMatter", 0, "")
+check("Matter off: status says OFF", json.load(RESP[-1])["GreeMatter"]["Matter"] == "OFF")
+tasmota.cmds["GreeMatter"]("GreeMatter", 0, "Diner fr")
+check("Matter off: turns it on", json.load(RESP[-1])["GreeMatter"]["Matter"] == "turning on, restarting twice")
+for f: TIMERS f() end TIMERS = []
+check("SetOption151 1 sent", CMDS[-1] == "Backlog SetOption151 1; Restart 1")
+gm.apply_setup()
+check("Matter still off: setup waits", dev.plugins_config.find("2") == nil)
+import persist
+persist.gree_matter_setup = nil
+tasmota.opt151 = 1
+fan.shadow_fan_mode = 0
+tick(1)
+CMDS = []
 
 # ---- set-up command
 check("parse 'Chambre'", gm.parse_room("Chambre")[0] == "Chambre" && gm.parse_room("Chambre")[1] == "en")

@@ -72,6 +72,13 @@ class GreeMatter
     return 3
   end
 
+  # the Matter device, or nil while Matter is off (Tasmota creates matter_device even then)
+  static def matter()
+    var d = global.matter_device
+    if d == nil || tasmota.get_option(151) != 1   return nil end
+    return d
+  end
+
   def on_ir(v)
     if !isinstance(v, map) || v.find("Vendor") != "GREE"   return end
     self.last_ir = v
@@ -119,13 +126,13 @@ class GreeMatter
 
   def cmd_setup(p)
     import json
-    var d = global.matter_device
+    var d = self.matter()
     if p == nil || size(str(p)) == 0
       var r = {"Matter": d != nil ? "ON" : "OFF", "Bridge": tasmota.cmd("FriendlyName1", true).find("FriendlyName1"),
                "Version": self.VERSION}
       if d != nil
         var eps = {}
-        for pl: d.plugins   if pl.get_endpoint() > 1   eps[str(pl.get_endpoint())] = pl.TYPE + " " + str(pl.get_name())   end   end
+        if d.plugins != nil   for pl: d.plugins   if pl.get_endpoint() > 1   eps[str(pl.get_endpoint())] = pl.TYPE + " " + str(pl.get_name())   end   end   end
         r["Endpoints"] = eps
       end
       tasmota.resp_cmnd(json.dump({"GreeMatter": r}))
@@ -153,7 +160,7 @@ class GreeMatter
   def apply_setup()
     import persist
     var rl = persist.find("gree_matter_setup")
-    var d = global.matter_device
+    var d = self.matter()
     if rl == nil || d == nil   return end
     persist.gree_matter_setup = nil
     persist.save()
@@ -174,7 +181,7 @@ class GreeMatter
   end
 
   def cmd_pair(p)
-    var d = global.matter_device
+    var d = self.matter()
     if d == nil   tasmota.resp_cmnd('{"GreeMatterPair":"Matter is off"}')   return end
     var c = d.commissioning
     if p == "0"
@@ -191,7 +198,7 @@ class GreeMatter
   # ---------------------------------------------------------------- endpoints
   # {"hvac": v.HVAC plugin, "opts": [its option plugins], "fan":, "dry":, "swing": plugins or nil} or nil
   def plugins()
-    var d = global.matter_device
+    var d = self.matter()
     if d == nil || d.plugins == nil   return nil end
     var r = {"opts": []}
     for pl: d.plugins
