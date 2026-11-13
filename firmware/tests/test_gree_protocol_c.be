@@ -142,7 +142,7 @@ check("off: Power OFF, last mode and setpoint kept, fan 0, outdoor off", g["Powe
       g["Setpoint"] == 25 && g["Fan"] == 0 && g["OutMode"] == "off" && g["CompHz"] == 0)
 
 var want = ["Room", "Coil", "CoilRaw", "Power", "Mode", "Setpoint", "Fan", "Link", "CompHz", "CompA", "PowerW", "OutCoil",
-            "OutAir", "DischC", "OutMode", "DischRaw", "LoadRaw", "Out", "OutLink"]
+            "OutAir", "DischC", "OutMode", "Defrost", "DischRaw", "LoadRaw", "Out", "OutLink"]
 var keys_ok = size(g) == size(want)
 for k: want keys_ok = keys_ok && g.contains(k) end
 check("same JSON fields as protocols A and B", keys_ok)

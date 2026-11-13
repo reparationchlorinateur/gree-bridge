@@ -57,10 +57,11 @@ Raw frames are not logged by default: with `BusLog 0` the script does no work pe
 
 ```json
 {"Gree":{"Room":20.5,"Coil":7.9,"CoilRaw":79,"Power":"ON","Mode":"cool","Setpoint":22,"Fan":3,"Link":"OK",
- "CompHz":46,"CompA":1.90,"PowerW":478,"OutCoil":27.5,"OutAir":7.9,"DischC":34.6,"OutMode":"cool","DischRaw":84,
+ "CompHz":46,"CompA":1.90,"PowerW":478,"OutCoil":27.5,"OutAir":7.9,"DischC":34.6,"OutMode":"cool","Defrost":null,"DischRaw":84,
  "LoadRaw":38,"Out":[46,1,0,135,84,79,38,1],"OutLink":"OK"}}
 ```
 
+- `Defrost`: `true` while the outdoor unit defrosts, `false` otherwise (protocol B, outdoor b15); `null` where the protocol does not tell (A, C). Home Assistant gets a "Defrost" binary sensor, and the main page shows "(defrost)" next to the compressor.
 - `Link` / `OutLink`: `OK` while valid frames arrive; after 10 s without one, `STANDBY` if the unit was off (normal, the indoor unit stops polling after a while) or `LOST` if it was on.
 - While a link is not OK, its measured values are `null` (compressor values 0 in `STANDBY`), so Home Assistant never repeats old readings or counts energy from them.
 - Field meanings: [docs/protocol.md](../docs/protocol.md).

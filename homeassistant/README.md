@@ -48,7 +48,7 @@ For a board with `DeviceName` "Bedroom heat pump" (entity ids start with `bedroo
 | `sensor…_room_temperature_unit`, `…_coil_temperature`, `…_setpoint_unit`, `…_mode_unit`, `…_indoor_fan_speed` | indoor frame |
 | `binary_sensor…_power_unit`, `…_indoor_fan_running`, `…_bus_link` | indoor frame |
 | `sensor…_compressor_frequency`, `…_compressor_current`, `…_outdoor_power`, `…_outdoor_air_temperature`, `…_outdoor_coil_temperature`, `…_outdoor_mode`, `…_discharge_temperature` | outdoor reply |
-| `binary_sensor…_compressor_running`, `…_outdoor_link` | outdoor reply |
+| `binary_sensor…_compressor_running`, `…_defrost`, `…_outdoor_link` | outdoor reply (`…_defrost`: protocol B units only, unknown on the others) |
 | `sensor…_coil_raw`, `…_discharge_raw`, `…_outdoor_raw_bytes` | diagnostics |
 | `sensor…_bme280_temperature`, `sensor…_bme280_humidity`, `sensor…_bme280_pressure` (and dew point) | Tasmota integration (BME280) |
 

@@ -159,7 +159,7 @@ check("+3 min: outdoor air 9, coil 5, discharge 44, 1.2 A",
 
 # same JSON fields as protocol A (the HA package and gree_matter.be read these)
 var want = ["Room", "Coil", "CoilRaw", "Power", "Mode", "Setpoint", "Fan", "Link", "CompHz", "CompA", "PowerW", "OutCoil",
-            "OutAir", "DischC", "OutMode", "DischRaw", "LoadRaw", "Out", "OutLink"]
+            "OutAir", "DischC", "OutMode", "Defrost", "DischRaw", "LoadRaw", "Out", "OutLink"]
 var keys_ok = size(g) == size(want)
 for k: want keys_ok = keys_ok && g.contains(k) end
 check("same JSON fields as protocol A", keys_ok)
@@ -203,13 +203,39 @@ var page = WEB.concat(" ")
 check("main page: protocol B, compressor and temperatures",
       string.find(page, "protocol B") >= 0 && string.find(page, "60 Hz, cool, 2.40 A") >= 0 && string.find(page, "18.0 / 35.0 / 67.0") >= 0)
 
+# defrost, real frames from a Willis unit heating at -2 C outside (2026-11-13, docs/captures/protocol_b_defrost.txt)
+def heat_pair(o, i)
+  send_frame(rxs, NOW + 20, frame_b(o))
+  send_frame(txs, NOW + 20, frame_b(i))
+  run(NOW + 800)
+end
+heat_pair("31 10 00 14 58 00 00 24 00 00 5C 00 26 20 86 00 00 09 00", "31 20 00 14 04 08 42 3E 00 4B 07 00 0A 00 00 00 00 00 00")
+g = gree()
+check("heat: Defrost false", g["Defrost"] == false && gree_bus.outdoor.defrost == false)
+var pubs0 = size(PUBS)
+heat_pair("31 10 00 14 55 00 00 11 00 00 5C 00 2A 29 81 02 00 03 00", "31 20 00 14 00 20 42 3E 00 23 07 00 00 00 00 00 00 00 00")
+g = gree()
+check("defrost: Defrost true, compressor 85 Hz, outdoor coil 1, indoor coil -5, fan 0",
+      g["Defrost"] == true && g["CompHz"] == 85 && g["OutCoil"] == 1.0 && g["Coil"] == -5.0 && g["Fan"] == 0)
+tick()
+check("defrost start published at once", size(PUBS) > pubs0)
+WEB.clear() gree_bus.web_sensor()
+check("main page shows defrost", string.find(WEB.concat(" "), "85 Hz, heat (defrost)") >= 0)
+heat_pair("31 10 00 04 00 00 00 00 00 00 59 00 38 38 74 02 00 00 00", "31 20 00 14 00 00 42 3D 00 15 07 00 00 00 00 00 00 00 00")
+check("compressor paused at the end of defrost: still Defrost", gree()["Defrost"] == true && gree()["CompHz"] == 0)
+heat_pair("31 10 00 14 21 00 00 0A 00 00 50 00 35 2C 67 00 00 01 00", "31 20 00 14 00 00 42 3C 00 23 07 00 08 00 00 00 00 00 00")
+check("back to heat: Defrost false", gree()["Defrost"] == false && gree()["CompHz"] == 33)
+var disc = nil
+for d: gree_bus.HA if d[1] == "defrost" disc = d end end
+check("HA discovery has a Defrost binary sensor", disc != nil && disc[0] == "binary_sensor")
+
 # link: the bus goes quiet while off -> STANDBY, the outdoor part 0 W
 send_frame(txs, NOW + 20, frame_b(off_in))
 send_frame(rxs, NOW + 20, frame_b("31 10 00 00 00 00 00 00 00 00 4F 00 38 3F 4C 00 00 00 00"))
 run(NOW + 800)
 NOW += 11000
 g = gree()
-check("quiet bus after off: STANDBY, nulls, 0 W", g["Link"] == "STANDBY" && g["Room"] == nil && g["OutLink"] == "STANDBY" &&
-      g["PowerW"] == 0 && g["OutAir"] == nil)
+check("quiet bus after off: STANDBY, nulls, 0 W, Defrost false", g["Link"] == "STANDBY" && g["Room"] == nil && g["OutLink"] == "STANDBY" &&
+      g["PowerW"] == 0 && g["OutAir"] == nil && g["Defrost"] == false)
 
 print(fails == 0 ? "PROTOCOL B ALL PASS" : string.format("PROTOCOL B %d FAILURES", fails))

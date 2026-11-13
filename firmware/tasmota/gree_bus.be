@@ -35,6 +35,8 @@
     OutCoil   outdoor coil temperature C (condenser in cool, evaporator in heat)
     OutAir    outdoor air temperature C
     OutMode   mode the outdoor unit runs: off / cool / heat (dry, fan_only assumed)
+    Defrost   true while the outdoor unit defrosts (protocol B: outdoor b15 = 2), false otherwise;
+              null when the protocol does not tell (A, C) or the outdoor link is LOST
     DischRaw  o5 raw
     CompA     compressor current A (o7 x 0.05, from two clamp-meter readings)
     PowerW    estimated outdoor-unit input power W = 240 V x 0.95 x (CompA + 0.2 A fan/board), 0 when stopped
@@ -91,7 +93,10 @@
     b3  bit 4 compressor running, bits 0-2 mode (0 off)          b4 compressor frequency Hz
     b7  compressor current, 0.1 A per count (assumed, not yet checked with a clamp meter)
     b12 outdoor air + 40    b13 outdoor coil + 40    b14 discharge + 40 (all three still to be confirmed)
-  The 32 10 / 32 20 frames are checked and skipped. Not mapped yet: indoor b5, b10, b12; outdoor b10, b17.
+    b15 2 = defrost (2026-11-13, a whole cycle seen: 0 in heat, 2 from the start of defrost until the
+        compressor restarts in heat; the indoor coil then reads down to -19 C and indoor b12 is 00)
+  The 32 10 / 32 20 frames are checked and skipped. Not mapped yet: indoor b5, b10; outdoor b10, b17.
+  Indoor b12: 00 off and during defrost, 08 heating with the fan waiting, 0A heating with the fan on.
 
   Protocol C, measured on an older Gree unit (2026-11-07): 600 baud 8E1 like protocol A, same framing
   idea and XOR checksum (ck = b1 ^ .. ^ b[n-3]), longer frames, about one of each per second:
@@ -396,6 +401,7 @@ class GreeOutdoor
   # current A, discharge raw, and the three temperatures already formatted ("12.5" or "null")
   var raw, last_ok, frames, pending, proto, hz, mode_i, load, amps, disch_raw, coil_s, air_s, disch_s
   var multi_amps                      # current from the multi-split 40 1p frame (nil on a single split)
+  var defrost                         # true / false (protocol B), nil when the protocol does not tell
 
   def init()
     self.last_ok = nil
@@ -433,7 +439,7 @@ class GreeOutdoor
   # Fields that should be published immediately when they change: compressor on/off and mode
   def state_key(now)
     if self.last_ok == nil return "NONE" end
-    return string.format("%s|%s|%s", self.link(now), self.hz > 0 ? "run" : "stop", self.mode())
+    return string.format("%s|%s|%s|%s", self.link(now), self.hz > 0 ? "run" : "stop", self.mode(), str(self.defrost))
   end
 
   def feed(chunk, now, tap)
@@ -499,6 +505,7 @@ class GreeOutdoor
     self.air_s = string.format("%.1f", f[12] - 40.0)
     self.coil_s = string.format("%.1f", f[13] - 40.0)
     self.disch_s = string.format("%.1f", f[14] - 40.0)
+    self.defrost = (f[15] & 0x02) != 0
     self.last_ok = now
     self.frames += 1
   end
@@ -524,14 +531,16 @@ class GreeOutdoor
     if link != "OK"                 # no repeated old readings: 0 power when the unit is off, null when LOST
       var z = (link == "STANDBY") ? "0" : "null"
       var md = (link == "STANDBY") ? '"off"' : "null"
-      return string.format(',"CompHz":%s,"CompA":%s,"PowerW":%s,"OutCoil":null,"OutAir":null,"DischC":null,"OutMode":%s,"DischRaw":null,"LoadRaw":null,"Out":null,"OutLink":"%s"',
-                           z, z, z, md, link)
+      var df = (link == "STANDBY" && self.defrost != nil) ? "false" : "null"
+      return string.format(',"CompHz":%s,"CompA":%s,"PowerW":%s,"OutCoil":null,"OutAir":null,"DischC":null,"OutMode":%s,"Defrost":%s,"DischRaw":null,"LoadRaw":null,"Out":null,"OutLink":"%s"',
+                           z, z, z, md, df, link)
     end
     var s = []
     for v: o s.push(str(v)) end
-    return string.format(',"CompHz":%d,"CompA":%.2f,"PowerW":%d,"OutCoil":%s,"OutAir":%s,"DischC":%s,"OutMode":"%s","DischRaw":%d,"LoadRaw":%d,"Out":[%s],"OutLink":"%s"',
+    var df = (self.defrost == nil) ? "null" : (self.defrost ? "true" : "false")
+    return string.format(',"CompHz":%d,"CompA":%.2f,"PowerW":%d,"OutCoil":%s,"OutAir":%s,"DischC":%s,"OutMode":"%s","Defrost":%s,"DischRaw":%d,"LoadRaw":%d,"Out":[%s],"OutLink":"%s"',
                          self.hz, self.comp_amps(), self.power_w(), self.coil_s, self.air_s,
-                         self.disch_s, self.mode(), self.disch_raw, self.load, s.concat(","), link)
+                         self.disch_s, self.mode(), df, self.disch_raw, self.load, s.concat(","), link)
   end
 end
 
@@ -554,7 +563,7 @@ class GreeBus
   static var MAX_LEN     = 80      # keeps the HA state under its 255-character limit
   static var HEARTBEAT   = 60      # republish decoded values at least this often (s)
   # -----------------------------------------------------------
-  static var VERSION     = "2026-11-07b rev B"
+  static var VERSION     = "2026-11-13 rev B"
   # Home Assistant entities: component, object id, name, value template, extra discovery keys
   static var HA = [
     ["sensor", "room_temperature", "Room temperature (unit)", "{{ value_json.Gree.Room }}",
@@ -602,6 +611,9 @@ class GreeBus
      "{{ 'OFF' if value_json.Gree.Link == 'LOST' else 'ON' }}", {"dev_cla": "connectivity", "ent_cat": "diagnostic"}],
     ["binary_sensor", "compressor_running", "Compressor running",
      "{{ 'ON' if (value_json.Gree.CompHz | default(0) | int(0)) > 0 else 'OFF' }}", {"dev_cla": "running"}],
+    ["binary_sensor", "defrost", "Defrost",
+     "{{ none if value_json.Gree.Defrost is not defined or value_json.Gree.Defrost is none else ('ON' if value_json.Gree.Defrost else 'OFF') }}",
+     {"ic": "mdi:snowflake-melt"}],
     ["binary_sensor", "outdoor_link", "Outdoor link",
      "{{ 'ON' if (value_json.Gree.OutLink | default('')) in ['OK', 'STANDBY'] else 'OFF' }}",
      {"dev_cla": "connectivity", "ent_cat": "diagnostic"}]
@@ -878,7 +890,8 @@ class GreeBus
     var o = self.outdoor
     if o.last_ok != nil
       var r = o.raw
-      tasmota.web_send(string.format("{s}Gree compressor{m}%d Hz, %s, %.2f A, ~%d W{e}", o.hz, o.mode(), o.comp_amps(), o.power_w()))
+      tasmota.web_send(string.format("{s}Gree compressor{m}%d Hz, %s%s, %.2f A, ~%d W{e}", o.hz, o.mode(),
+                                     o.defrost ? " (defrost)" : "", o.comp_amps(), o.power_w()))
       tasmota.web_send(string.format("{s}Gree outdoor air / coil / discharge{m}%s / %s / %s &deg;C{e}",
                                      o.air_s, o.coil_s, o.disch_s))
       var s = []

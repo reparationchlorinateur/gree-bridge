@@ -284,7 +284,7 @@ check("OutLink LOST: outdoor values null (no phantom power), indoor still live",
 var o2 = GreeOutdoor()
 o2.feed(bytes("082C01004C78612B04570F"), 0, "RX")
 var bus2 = gree_bus
-check("outdoor json_part shape", o2.json_part(0) == ',"CompHz":44,"CompA":2.15,"PowerW":536,"OutCoil":6.8,"OutAir":14.3,"DischC":49.5,"OutMode":"heat","DischRaw":120,"LoadRaw":43,"Out":[44,1,0,76,120,97,43,4],"OutLink":"OK"')
+check("outdoor json_part shape", o2.json_part(0) == ',"CompHz":44,"CompA":2.15,"PowerW":536,"OutCoil":6.8,"OutAir":14.3,"DischC":49.5,"OutMode":"heat","Defrost":null,"DischRaw":120,"LoadRaw":43,"Out":[44,1,0,76,120,97,43,4],"OutLink":"OK"')
 print("  ", o2.json_part(0))
 # compressor stop (o1 -> 0, mode off) is published immediately; restart ramp values wait for GreeInterval
 tasmota.cmds["GreeInterval"]("GreeInterval", 0, "10", nil)
@@ -387,7 +387,7 @@ gree_bus.web_sensor()
 print("--- discovery")
 def disc_pubs() var r = [] for p: PUBS if string.find(p[0], "homeassistant/") == 0 r.push(p) end end return r end
 var d = disc_pubs()
-check("discovery published once (first second with MQTT up)", size(d) == 20)
+check("discovery published once (first second with MQTT up)", size(d) == 21)
 var ids = {}
 var okd = true
 var maxlen = 0
@@ -405,7 +405,7 @@ for p: d
   if l > maxlen maxlen = l end
 end
 check("retained, valid JSON, device = DeviceName + MAC, availability = LWT", okd)
-check("20 unique ids", size(ids) == 20)
+check("21 unique ids", size(ids) == 21)
 check("each message well under Tasmota's 1200-byte MQTT limit", maxlen < 1000)
 print("  longest discovery message:", maxlen, "bytes")
 print("  entities:", names)
@@ -417,27 +417,27 @@ check("no repeat while nothing changes", size(disc_pubs()) == n0)
 DEVNAME = "Bedroom heat pump"
 for k: 0 .. 61 NOW += 1000 tick() end
 d = disc_pubs()
-check("DeviceName change republished within a minute", size(d) == n0 + 20 && json.load(d[-1][1])["dev"]["name"] == "Bedroom heat pump")
+check("DeviceName change republished within a minute", size(d) == n0 + 21 && json.load(d[-1][1])["dev"]["name"] == "Bedroom heat pump")
 tasmota.rules["Mqtt#Connected"]()
 NOW += 1000 tick()
-check("republished after an MQTT reconnect", size(disc_pubs()) == n0 + 40)
+check("republished after an MQTT reconnect", size(disc_pubs()) == n0 + 42)
 tasmota.cmds["GreeDiscovery"]("GreeDiscovery", 0, "0", nil)
 d = disc_pubs()
 var removed = true
-for k: n0 + 40 .. size(d) - 1 removed = removed && d[k][1] == "" && d[k][2] == true end
-check("GreeDiscovery 0 removes all 20 entities", size(d) == n0 + 60 && removed && json.load(tasmota.resp)["GreeDiscovery"] == "OFF")
+for k: n0 + 42 .. size(d) - 1 removed = removed && d[k][1] == "" && d[k][2] == true end
+check("GreeDiscovery 0 removes all 21 entities", size(d) == n0 + 63 && removed && json.load(tasmota.resp)["GreeDiscovery"] == "OFF")
 for k: 0 .. 70 NOW += 1000 tick() end
-check("nothing published while off", size(disc_pubs()) == n0 + 60)
+check("nothing published while off", size(disc_pubs()) == n0 + 63)
 tasmota.cmds["GreeDiscovery"]("GreeDiscovery", 0, "1", nil)
-check("GreeDiscovery 1 publishes again (saved)", size(disc_pubs()) == n0 + 80 && persist.find("gree_disc", nil) == true &&
+check("GreeDiscovery 1 publishes again (saved)", size(disc_pubs()) == n0 + 84 && persist.find("gree_disc", nil) == true &&
       json.load(tasmota.resp)["Id"] == "gree_aabbcc010203")
 MQTT_UP = false
 tasmota.rules["Mqtt#Connected"]()
 for k: 0 .. 3 NOW += 1000 tick() end
-check("nothing sent while MQTT is down", size(disc_pubs()) == n0 + 80)
+check("nothing sent while MQTT is down", size(disc_pubs()) == n0 + 84)
 MQTT_UP = true
 NOW += 1000 tick()
-check("announced when MQTT is back", size(disc_pubs()) == n0 + 100)
+check("announced when MQTT is back", size(disc_pubs()) == n0 + 105)
 check("GREE values still published normally", size(gree_pubs()) > 0)
 
 # ---------------- hooks for gree_tools.be: frames, pause / resume, serial settings ----------------

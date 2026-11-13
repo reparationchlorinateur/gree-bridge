@@ -141,7 +141,7 @@ The TX tap sees `31 20` and `32 20` about 0.55 s apart; the RX tap sees all four
 | b7 | **room temperature** + 40 (whole degrees) | confirmed |
 | b9 | **indoor coil temperature** + 40 | confirmed (rises 20 → 27 → 37 °C in heat) |
 | b10 | `01`, `07` in heat | unknown |
-| b12 | `00` off, `08`, `0A` while heating | unknown |
+| b12 | `00` off **and during defrost**, `08` heating with the fan waiting for a warm coil, `0A` heating with the fan running | seen through a defrost cycle |
 | ck | sum of b0 to b18 | |
 
 ### Outdoor frame `31 10`
@@ -155,7 +155,8 @@ The TX tap sees `31 20` and `32 20` about 0.55 s apart; the RX tap sees all four
 | b12 | **outdoor air temperature** + 40 | checked: 8 and 9 °C against 7.4 °C from a weather station |
 | b13 | **outdoor coil temperature** + 40 (drops below the air in heat: evaporator) | confirmed |
 | b14 | **discharge temperature** + 40 (11 °C after hours off, 44 °C after 3 minutes of heating, 88 to 98 °C at 53 to 78 Hz) | confirmed by its behaviour |
-| b17 | 0 stopped, 2-3 at low load, 5-7 at high load: outdoor fan stage? | guess |
+| b15 | **`02` = defrost**, `00` otherwise: set for the whole cycle, from the start of defrost until the compressor restarts in heat. Published as `Defrost` | seen through a whole defrost cycle (2026-11-13) |
+| b17 | 0 stopped, 2-3 at low load, 5-9 at high load; 3-6 during defrost, when the outdoor fan is off, so probably not the outdoor fan | unknown |
 | ck | sum of b0 to b18 | |
 
 The two second frames hardly change: `32 20` is `00 80 00…` while off and all zero while on; `32 10` carries `41`/`46`/`4B` in b12 (a frequency or capacity limit?) and `28` in b15-b19. The decoder checks and skips them.
@@ -166,7 +167,18 @@ The two second frames hardly change: `32 20` is `00 80 00…` while off and all 
 
 [`captures/protocol_b_startup_heat.txt`](captures/protocol_b_startup_heat.txt): unit off for 85 s, then Heat 22 °C from Home Assistant (about 8 °C outside, 19 °C inside). b3 goes `00` → `14` one second after the command; the outdoor unit answers with mode 4 (`04`), then starts the compressor (`14`, 33 Hz). The indoor fan stays stopped until the coil reaches about 27 °C (3 minutes), then runs at low speed.
 
-Still open: b7's scale (clamp meter), b10 and b17 outdoor, b5/b10/b12 indoor, the `32 10` frame, auto mode, defrost, error codes.
+### Defrost
+
+[`captures/protocol_b_defrost.txt`](captures/protocol_b_defrost.txt): a whole defrost cycle while heating at about -2 °C outside (2026-11-13). The unit reverses its cycle to melt the ice on the outdoor coil:
+
+- **outdoor b15 = `02`** for the whole cycle (`00` in normal heat): this is the flag the decoder publishes as `"Defrost": true` (and the Home Assistant binary sensor "Defrost");
+- the **indoor coil goes below zero** (down to -19 °C) with the indoor fan stopped (b4 `00`) and indoor b12 `00`: the indoor coil is the cold side now, so a "frozen" indoor coil reading during defrost is normal;
+- the **outdoor coil warms** from -8 to +16 °C with the compressor held at 85 Hz; the outdoor "air" byte rises to +17 °C at the same time (its sensor sits near the coil), so `OutAir` is wrong during and just after a defrost;
+- the end: the compressor stops (b3 `04`, b15 still `02`) for about two minutes, indoor b12 goes back to `08`, then the compressor restarts in heat at 33 Hz with b15 `00`; the indoor fan restarts once the indoor coil is warm again (16 °C here, 1.5 minutes later).
+
+About 7 to 8 minutes in all, of which about 4 without heat to the room.
+
+Still open: b7's scale (clamp meter), b10 and b17 outdoor, b5/b10 indoor, the `32 10` frame, auto mode, error codes; whether protocols A and C carry a defrost flag (their JSON has `"Defrost": null`).
 
 ### Multi-split outdoor units (port address)
 
