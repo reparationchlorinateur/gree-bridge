@@ -59,9 +59,10 @@ If it fails: "Failed to open serial port" = another program holds the port (clos
 2. Find its IP address (your router's client list), open `http://<board ip>`.
 3. **Tools → Console**, one line (the board restarts):
    ```
-   Backlog DeviceName Bedroom heat pump; Topic gree_bedroom; Sleep 10; TelePeriod 60; WebPassword <a password>
+   Backlog DeviceName Bedroom heat pump; Topic gree_bedroom; Sleep 10; TelePeriod 60; WifiConfig 4; WebPassword <a password>
    ```
    `WebPassword` protects the web page and the setup hotspot (user `admin`). Avoid `;` in it.
+   `WifiConfig 4`: once the board is on your network, it keeps retrying that network when it loses it. The firmware's default (WifiConfig 2, the setup hotspot when the network cannot be joined) is handy for the first set-up, but after a power cut the boards start faster than the router and go into setup mode instead of waiting for it (seen on two boards, 2026-11-19: one came back after 18 minutes, the other stayed in setup mode until restarted).
 4. Time zone, for example Eastern time with daylight saving (see the Tasmota `Timezone` docs for others):
    ```
    Backlog Timezone 99; TimeDST 0,2,3,1,2,-240; TimeSTD 0,1,11,1,2,-300
@@ -199,7 +200,7 @@ Other ecosystems: the board is a standard Matter thermostat, so Google Home, Ama
 - **Firmware update**: Firmware Upgrade → Upgrade by file upload → `firmware/build/gree_tasmota32s3_15.6.0.bin` (the OTA file, not the factory one). Settings, scripts and the Apple Home pairing stay. Do not use the stock Tasmota OTA: it lacks the IR and sensor options this board needs.
 - **Script update**: upload the new `.be` file in Manage File system, then `BrRestart`.
 - **Backup** each board after setup: Tools → Backup Configuration; keep the file with the room name.
-- **Wi-Fi changed or gone**: press BOOT 6 times quickly (inside the unit, breaker off to reach it, then on): the setup hotspot opens for 3 minutes. The board also opens it by itself when it cannot join its network. Do **not** hold BOOT 40 s: that resets all settings (Wi-Fi, MQTT, names, template, Matter on/off); the uploaded scripts stay, then redo steps 3, 4, 7a.1 and 7b.1.
+- **Wi-Fi changed or gone**: press BOOT 6 times quickly (inside the unit, breaker off to reach it, then on): the setup hotspot opens for 3 minutes. With `WifiConfig 4` (step 3) the board does not open it by itself; with `WifiConfig 2` it does whenever it cannot join its network, power cuts included. Do **not** hold BOOT 40 s: that resets all settings (Wi-Fi, MQTT, names, template, Matter on/off); the uploaded scripts stay, then redo steps 3, 4, 7a.1 and 7b.1.
 - **Removing a board from Apple Home**: remove the accessory in the Home app first, then reset or reuse the board.
 
 ## 10. Troubleshooting
